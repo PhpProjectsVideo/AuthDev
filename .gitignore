@@ -1,0 +1,5 @@
+puphpet/config-custom.yaml
+.vagrant
+.idea
+html/
+/auth.dev/vendor/
