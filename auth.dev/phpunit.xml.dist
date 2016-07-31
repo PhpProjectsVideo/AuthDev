@@ -9,4 +9,7 @@
             <directory>tests/</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <const name="TEST_DATABASE_FILE" value="test-auth.sqlite" />
+    </php>
 </phpunit>

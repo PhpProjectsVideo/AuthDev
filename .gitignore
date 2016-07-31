@@ -3,3 +3,5 @@ puphpet/config-custom.yaml
 .idea
 html/
 /auth.dev/vendor/
+/auth.dev/data/
+/auth.dev/tests/artifacts/
