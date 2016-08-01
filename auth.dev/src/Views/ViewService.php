@@ -95,4 +95,21 @@ class ViewService
     {
         header($header, $replace, $httpResponseCode);
     }
+
+    /**
+     * Helper function to use in templates to start a block of content that you'll be passing to another template.
+     */
+    private function startBlock()
+    {
+        ob_start();
+    }
+
+    /**
+     * Helper function that stops a block of content and returns that content for use in another template.
+     * @return string
+     */
+    private function endBlock() : string 
+    {
+        return ob_get_clean() ?: '';
+    }
 }

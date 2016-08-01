@@ -4,6 +4,9 @@ use PhpProjects\AuthDev\Database\DatabaseService;
 
 require __DIR__ . "/../vendor/autoload.php";
 
+const CONFIG_CSRF_KEY = 'ihger85hegrj08q9hue';
+const CONFIG_CSRF_TTL = 1800;
+
 const CONFIG_VIEWS_DIR = __DIR__ . '/../views';
 
 // The code below is used to make sure when we are running selenium tests, we use our test database.
