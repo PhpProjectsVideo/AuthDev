@@ -351,4 +351,64 @@ class UserControllerTest extends TestCase
 
         Phake::verify($this->viewService)->redirect('/users/', 303, 'User new.name successfully edited!');
     }
+    
+    public function testGetRemove()
+    {
+        Phake::when($this->csrfService)->getNewToken->thenReturn('1itfuefduyp9h');
+
+        $user = UserEntity::createFromArray([
+            'username' => 'mike.lively',
+            'name' => 'Mike Lively',
+            'email' => 'm@digitalsandwich.com',
+            'password' => 'hashedpassword'
+        ]);
+        Phake::when($this->userRepository)->getUserListByUsernames->thenReturn(new \ArrayIterator([$user]));
+
+        $_SERVER['HTTP_REFERER'] = '/mytest/';
+
+        $this->userController->getRemove([
+            'users' => [
+                'mike.lively',
+                'user2'
+            ],
+        ]);
+
+        Phake::verify($this->userRepository)->getUserListByUsernames(['mike.lively', 'user2']);
+        Phake::verify($this->viewService)->renderView('users/removeList', Phake::capture($templateData));
+        
+        $this->assertEquals('1itfuefduyp9h', $templateData['token']);
+        $this->assertEquals([ $user ], iterator_to_array($templateData['users']));
+        $this->assertEquals('/mytest/', $templateData['originalUrl']);
+    }
+
+    public function testPostRemove()
+    {
+        $this->userController->postRemove([
+            'users' => [
+                'mike.lively',
+                'user2'
+            ],
+            'token' => '1itfuefduyp9h',
+            'originalUrl' => '/mytest/',
+        ]);
+
+        Phake::verify($this->userRepository)->deleteUsersByUsernames(['mike.lively', 'user2']);
+        Phake::verify($this->viewService)->redirect('/mytest/', 303, 'Users successfully removed: mike.lively, user2');
+    }
+
+    public function testPostRemoveInvalidToken()
+    {
+        Phake::when($this->csrfService)->validateToken->thenReturn(false);
+
+        $this->userController->postRemove([
+            'users' => [
+                'mike.lively',
+                'user2'
+            ],
+            'originalUrl' => '/mytest/',
+        ]);
+
+        Phake::verify($this->userRepository, Phake::never())->deleteUsersByUsernames;
+        Phake::verify($this->viewService)->redirect('/mytest/', 303, "Your session has expired, please try deleting those users again");
+    }
 }

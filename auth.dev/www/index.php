@@ -43,6 +43,16 @@ try
                         $controller->postDetail($pathParts[2] ?? '', $_POST);
                     }
                     break;
+                case 'remove':
+                    if ($_SERVER['REQUEST_METHOD'] == 'GET')
+                    {
+                        $controller->getRemove($_GET);
+                    }
+                    else
+                    {
+                        $controller->postRemove($_POST);
+                    }
+                    break;
                 default:
                     throw (new ContentNotFoundException("I could not find the page you were looking for. You may need to start over!"))
                         ->setTitle('Page not found!');

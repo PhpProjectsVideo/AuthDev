@@ -48,6 +48,23 @@ class UserRepository
             yield UserEntity::createFromArray($rowData);
         }
     }
+    
+    public function getUserListByUsernames(array $usernames) : \Traversable
+    {
+        if (empty($usernames))
+        {
+            return new \ArrayIterator([]);
+        }
+        $parms = rtrim(str_repeat('?,', count($usernames)), ',');
+        $sql = "SELECT id, username, email, name, password FROM users WHERE username IN ($parms) ORDER BY username";
+        $stm = $this->pdo->prepare($sql);
+        $stm->execute($usernames);
+
+        foreach ($stm as $rowData)
+        {
+            yield UserEntity::createFromArray($rowData);
+        }
+    }
 
     /**
      * Returns the number of users in the table
@@ -162,5 +179,17 @@ class UserRepository
                 throw $e;
             }
         }
+    }
+
+    public function deleteUsersByUsernames(array $usernames)
+    {
+        if (empty($usernames))
+        {
+            return;
+        }
+        $parms = rtrim(str_repeat('?,', count($usernames)), ',');
+        $sql = "DELETE FROM users WHERE username IN ($parms)";
+        $stm = $this->pdo->prepare($sql);
+        $stm->execute($usernames);
     }
 }

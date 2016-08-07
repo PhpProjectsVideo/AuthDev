@@ -9,6 +9,7 @@
 
 <div class="pull-left">
     <a href="/users/new" class="btn btn-primary">Add User</a>
+    <button class="btn btn-danger" id="user-list-delete" form="user-remove-form">Remove Selected Users</button>
 </div>
 <form method="get" action="/users/" class="form-inline pull-right">
     <div class="form-group">
@@ -17,26 +18,28 @@
         <button id="user-list-search" type="submit" class="btn btn-default">Search</button>
     </div>
 </form>
-<table id="user-list" class="table">
-    <thead>
-    <tr>
-        <th style="width: 15px;"></th>
-        <th>Username</th>
-        <th>Name</th>
-        <th>Email</th>
-    </tr>
-    </thead>
-    <tbody>
-    <?php foreach ($users as $user) : ?>
+<form action="/users/remove" method="get" id="user-remove-form">
+    <table id="user-list" class="table">
+        <thead>
         <tr>
-            <td></td>
-            <td><a href="/users/detail/<?=htmlentities(urlencode($user->getUsername()))?>"><?=htmlentities($user->getUsername())?></a></td>
-            <td><?=htmlentities($user->getName())?></td>
-            <td><?=htmlentities($user->getEmail())?></td>
+            <th style="width: 15px;"></th>
+            <th>Username</th>
+            <th>Name</th>
+            <th>Email</th>
         </tr>
-    <?php endforeach; ?>
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+        <?php foreach ($users as $user) : ?>
+            <tr>
+                <td><input type="checkbox" name="users[]" value="<?=htmlentities($user->getUsername())?>" value="1"></td>
+                <td><a href="/users/detail/<?=htmlentities(urlencode($user->getUsername()))?>"><?=htmlentities($user->getUsername())?></a></td>
+                <td><?=htmlentities($user->getName())?></td>
+                <td><?=htmlentities($user->getEmail())?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</form>
 
 <nav aria-label="Page navigation">
     <ul class="pagination pull-right">

@@ -89,6 +89,23 @@ class UserRepositoryTest extends TestCase
         $this->assertEquals('taken.user10', $userList[4]->getUsername());
     }
 
+    public function testGetUserListByUsernames()
+    {
+        $userList = $this->userRepository->getUserListByUsernames(['taken.user01', 'taken.user06']);
+
+        $userList = iterator_to_array($userList);
+        $this->assertCount(2, $userList);
+        $this->assertEquals('taken.user01', $userList[0]->getUsername());
+        $this->assertEquals('taken1@digitalsandwich.com', $userList[0]->getEmail());
+        $this->assertEquals('Existing User 1', $userList[0]->getName());
+        $this->assertEquals($this->password, $userList[0]->getPasswordHash());
+        $this->assertEquals('taken.user06', $userList[1]->getUsername());
+        $this->assertEquals('taken6@digitalsandwich.com', $userList[1]->getEmail());
+        $this->assertEquals('Existing User 6', $userList[1]->getName());
+        $this->assertEquals($this->password, $userList[1]->getPasswordHash());
+
+    }
+
     public function testGetUserCount()
     {
         $userCount = $this->userRepository->getUserCount();
@@ -230,6 +247,15 @@ class UserRepositoryTest extends TestCase
 
         $queryTable = $this->getConnection()->createQueryTable('users',
             "SELECT * FROM users WHERE username = 'taken.user01'"
+        );
+        $this->assertEquals(0, $queryTable->getRowCount());
+    }
+
+    public function testDeleteUsersByUsernames()
+    {
+        $this->userRepository->deleteUsersByUsernames(['taken.user01', 'taken.user02']);
+        $queryTable = $this->getConnection()->createQueryTable('users',
+            "SELECT * FROM users WHERE username IN ('taken.user01', 'taken.user02')"
         );
         $this->assertEquals(0, $queryTable->getRowCount());
     }

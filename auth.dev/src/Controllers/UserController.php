@@ -192,4 +192,37 @@ class UserController
             'token' => $this->csrfService->getNewToken(),
         ]);
     }
+
+    /**
+     * Displays a removal confirmation for the usernames provided. 
+     * @param array $getData
+     */
+    public function getRemove(array $getData)
+    {
+        $users = $this->userRepository->getUserListByUsernames($getData['users'] ?? []);
+        $this->viewService->renderView('users/removeList', [
+            'users' => $users,
+            'token' => $this->csrfService->getNewToken(),
+            'originalUrl' => $_SERVER['HTTP_REFERER'] ?? '/users/'
+        ]);
+    }
+
+    /**
+     * Removes the users provided
+     * @param $_POST
+     */
+    public function postRemove(array $postData)
+    {
+        if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+        {
+            $this->viewService->redirect($postData['originalUrl'], 303, "Your session has expired, please try deleting those users again");
+        }
+        else
+        {
+            $users = $postData['users'] ?? [];
+            $this->userRepository->deleteUsersByUsernames($users);
+            
+            $this->viewService->redirect($postData['originalUrl'], 303, 'Users successfully removed: ' . implode(', ', $users));
+        }
+    }
 }
