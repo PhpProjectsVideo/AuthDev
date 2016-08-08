@@ -30,6 +30,104 @@ class GroupRepository
     }
 
     /**
+     * Returns a map of column names to entity values from the given $entity
+     * 
+     * @param mixed $entity
+     * @return array
+     */
+    protected function getRowFromEntity($entity)
+    {
+        return [
+            'name' => $entity->getName(),
+        ];
+    }
+
+    /**
+     * Creates an entity based on a map of column names to entity values.
+     * 
+     * @param array $rowData
+     * @return mixed
+     */
+    protected function getEntityFromRow(array $rowData)
+    {
+        return GroupEntity::createFromArray($rowData);
+    }
+
+    /**
+     * Returns the database id of the given entity.
+     * 
+     * @param mixed $entity
+     * @return mixed
+     */
+    protected function getEntityId($entity)
+    {
+        return $entity->getId();
+    }
+
+    /**
+     * Sets the database id of the given entity to $lastInsertId
+     * @param mixed $entity
+     * @param int $lastInsertId
+     */
+    protected function setEntityId($entity, int $lastInsertId)
+    {
+        $entity->setId($lastInsertId);
+    }
+
+    /**
+     * Returns the name of the table this repository works with.
+     * 
+     * @return string
+     */
+    protected function getTable() : string
+    {
+        return 'groups';
+    }
+
+    /**
+     * Returns a list of columns that should be loaded whenever list calls are made to the repo.
+     * 
+     * @return array
+     */
+    protected function getColumnList() : array
+    {
+        return [
+            'id',
+            'name'
+        ];
+    }
+
+    /**
+     * The name of the column we typically sort results by.
+     * 
+     * @return string
+     */
+    protected function getDefaultSortColumn() : string
+    {
+        return 'name';
+    }
+
+    /**
+     * The name of the column that recieves the majority of our lookups.
+     * 
+     * @return string
+     */
+    protected function getFriendlyLookupColumn() : string
+    {
+        return 'name';
+    }
+
+    /**
+     * A helper method to make building the column list in sql easier.
+     * 
+     * @return string
+     */
+    protected function getSqlColumnList() : string
+    {
+        return implode($this->getColumnList(), ',');
+    }
+
+    /**
      * Returns a sorted list of up to $limit groups with an offset of $offset.
      *
      * Groups will be sorted by their name.
@@ -42,17 +140,17 @@ class GroupRepository
     {
         if (!empty($limit))
         {
-            $sql = "SELECT id, name FROM groups ORDER BY name LIMIT {$offset}, {$limit}";
+            $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} ORDER BY {$this->getDefaultSortColumn()} LIMIT {$offset}, {$limit}";
         }
         else
         {
-            $sql = "SELECT id, name FROM groups ORDER BY name";
+            $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} ORDER BY {$this->getDefaultSortColumn()}";
         }
         $stm = $this->pdo->query($sql);
 
         foreach ($stm as $rowData)
         {
-            yield GroupEntity::createFromArray($rowData);
+            yield $this->getEntityFromRow($rowData);
         }
     }
 
@@ -63,13 +161,13 @@ class GroupRepository
             return new \ArrayIterator([]);
         }
         $parms = rtrim(str_repeat('?,', count($names)), ',');
-        $sql = "SELECT id, name FROM groups WHERE name IN ($parms) ORDER BY name";
+        $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} IN ($parms) ORDER BY {$this->getDefaultSortColumn()}";
         $stm = $this->pdo->prepare($sql);
         $stm->execute($names);
 
         foreach ($stm as $rowData)
         {
-            yield GroupEntity::createFromArray($rowData);
+            yield $this->getEntityFromRow($rowData);
         }
     }
 
@@ -80,7 +178,7 @@ class GroupRepository
      */
     public function getGroupCount() : int
     {
-        $sql = "SELECT COUNT(*) FROM groups";
+        $sql = "SELECT COUNT(*) FROM {$this->getTable()}";
 
         $stm = $this->pdo->query($sql);
 
@@ -99,13 +197,13 @@ class GroupRepository
      */
     public function getGroupsMatchingName(string $query, int $limit, int $offset = 0) : \Traversable
     {
-        $sql = "SELECT id, name FROM groups WHERE name LIKE ? ORDER BY name LIMIT {$offset}, {$limit}";
+        $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} LIKE ? ORDER BY {$this->getDefaultSortColumn()} LIMIT {$offset}, {$limit}";
         $stm = $this->pdo->prepare($sql);
         $stm->execute([ $query . '%' ]);
 
         foreach ($stm as $rowData)
         {
-            yield GroupEntity::createFromArray($rowData);
+            yield $this->getEntityFromRow($rowData);
         }
     }
 
@@ -117,7 +215,7 @@ class GroupRepository
      */
     public function getGroupCountMatchingName(string $query) : int
     {
-        $sql = "SELECT COUNT(*) FROM groups WHERE name LIKE ?";
+        $sql = "SELECT COUNT(*) FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} LIKE ?";
         $stm = $this->pdo->prepare($sql);
         $stm->execute([ $query . '%' ]);
         return $stm->fetchColumn();
@@ -131,7 +229,7 @@ class GroupRepository
      */
     public function getGroupByName(string $name)
     {
-        $sql = "SELECT * FROM groups WHERE name = ?";
+        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} = ?";
         $stm = $this->pdo->prepare($sql);
         $stm->execute([ $name ]);
 
@@ -142,7 +240,7 @@ class GroupRepository
         }
         else
         {
-            return GroupEntity::createFromArray($row);
+            return $this->getEntityFromRow($row);
         }
     }
 
@@ -156,28 +254,42 @@ class GroupRepository
     {
         if (empty($group->getId()))
         {
-            $sql = "INSERT INTO groups (name) VALUES (?)";
+            $stmPlaceholders = [];
+            foreach ($this->getColumnList() as $column)
+            {
+                $stmPlaceholders[] = ':' . $column;
+            }
+            $stmPlaceholders = implode(',', $stmPlaceholders);
+            $sql = "INSERT INTO {$this->getTable()} ({$this->getSqlColumnList()}) VALUES ({$stmPlaceholders})";
             $stm = $this->pdo->prepare($sql);
-            $sqlParameters = [$group->getName()];
+            $sqlParameters = $this->getRowFromEnitity($group);
         }
         else
         {
-            $sql = "UPDATE groups SET name = ? WHERE id = ?";
+            $stmPlaceholders = [];
+            foreach ($this->getColumnList() as $column)
+            {
+                $stmPlaceholders[] = $column . ' = :' . $column;
+            }
+            $stmPlaceholders = implode(',', $stmPlaceholders);
+            $sql = "UPDATE {$this->getTable()} SET {$stmPlaceholders} WHERE id = :id";
             $stm = $this->pdo->prepare($sql);
-            $sqlParameters = [$group->getName(), $group->getId()];
+            $sqlParameters = $this->getRowFromEnitity($group);
+            $sqlParameters['id'] = $this->getEntityId($group);
         }
 
         try
         {
             $stm->execute($sqlParameters);
-            if (empty($group->getId()))
+            if (empty($this->getEntityId($group)))
             {
+                $this->setEntityId($group, $this->pdo->lastInsertId());
                 $group->setId($this->pdo->lastInsertId());
             }
         }
         catch (\PDOException $e)
         {
-            if (preg_match('/UNIQUE constraint failed: groups\.([^ ]+)/', $e->getMessage(), $matches))
+            if (preg_match("/UNIQUE constraint failed: {$this->getTable()}\\.([^ ]+)/", $e->getMessage(), $matches))
             {
                 throw new DuplicateGroupException($matches[1], $e);
             }
@@ -195,7 +307,7 @@ class GroupRepository
             return;
         }
         $parms = rtrim(str_repeat('?,', count($names)), ',');
-        $sql = "DELETE FROM groups WHERE name IN ($parms)";
+        $sql = "DELETE FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} IN ($parms)";
         $stm = $this->pdo->prepare($sql);
         $stm->execute($names);
     }
