@@ -17,6 +17,10 @@
         <div class="navbar-header">
             <a class="navbar-brand" href="/">Auth Manager</a>
         </div>
+        <div class="nav navbar-nav">
+            <li><a href="/users/">Users</a></li>
+            <li><a href="/groups/">Groups</a></li>
+        </div>
     </div>
 </nav>
 <div class="container-fluid">
