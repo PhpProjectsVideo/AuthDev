@@ -208,7 +208,9 @@ abstract class SimpleCrudRepository
         }
         else
         {
-            return $this->getEntityFromRow($row);
+            $entity = $this->getEntityFromRow($row);
+            $this->onSingleEntityLoad($entity);
+            return $entity;
         }
     }
 
@@ -253,6 +255,7 @@ abstract class SimpleCrudRepository
             {
                 $this->setEntityId($entity, $this->pdo->lastInsertId());
             }
+            $this->onSingleEntitySave($entity);
         }
         catch (\PDOException $e)
         {
@@ -278,8 +281,37 @@ abstract class SimpleCrudRepository
             return;
         }
         $parms = rtrim(str_repeat('?,', count($names)), ',');
+        
+        $this->onPreMultiEntityDelete($names);
+        
         $sql = "DELETE FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} IN ($parms)";
         $stm = $this->pdo->prepare($sql);
         $stm->execute($names);
+    }
+
+    /**
+     * Override to perform some customization when a single entity is loaded.
+     *
+     * @param mixed $entity
+     */
+    protected function onSingleEntityLoad($entity)
+    {
+    }
+
+    /**
+     * Override to perform some customization when a single entity is saved.
+     * 
+     * @param mixed $entity
+     */
+    protected function onSingleEntitySave($entity)
+    {
+    }
+
+    /**
+     * Overrided to perform some customization prio to deleting an entity by friendly names
+     * @param $names
+     */
+    protected function onPreMultiEntityDelete($names)
+    {
     }
 }

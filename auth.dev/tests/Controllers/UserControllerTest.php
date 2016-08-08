@@ -4,9 +4,9 @@ namespace PhpProjects\AuthDev\Controllers;
 
 use Phake;
 use PhpProjects\AuthDev\Model\Csrf\CsrfService;
+use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Group\GroupEntity;
 use PhpProjects\AuthDev\Model\Group\GroupRepository;
-use PhpProjects\AuthDev\Model\User\DuplicateUserException;
 use PhpProjects\AuthDev\Model\User\UserEntity;
 use PhpProjects\AuthDev\Model\User\UserRepository;
 use PhpProjects\AuthDev\Model\User\UserValidation;
@@ -67,10 +67,10 @@ class UserControllerTest extends TestCase
         $this->viewService = Phake::mock(ViewService::class);
 
         $this->userRepository = Phake::mock(UserRepository::class);
-        Phake::when($this->userRepository)->getSortedUserList->thenReturn($this->userList);
-        Phake::when($this->userRepository)->getUserCount->thenReturn(30);
-        Phake::when($this->userRepository)->getUsersMatchingUsername->thenReturn($this->userList);
-        Phake::when($this->userRepository)->getUserCountMatchingUsername->thenReturn(30);
+        Phake::when($this->userRepository)->getSortedList->thenReturn($this->userList);
+        Phake::when($this->userRepository)->getCount->thenReturn(30);
+        Phake::when($this->userRepository)->getListMatchingFriendlyName->thenReturn($this->userList);
+        Phake::when($this->userRepository)->getCountMatchingFriendlyName->thenReturn(30);
 
         $this->groupRepository = Phake::mock(GroupRepository::class);
         $this->groupList = new \ArrayIterator([
@@ -94,10 +94,10 @@ class UserControllerTest extends TestCase
     {
         $this->userController->getList(1);
 
-        Phake::verify($this->userRepository)->getSortedUserList(10, 0);
-        Phake::verify($this->userRepository)->getUserCount();
+        Phake::verify($this->userRepository)->getSortedList(10, 0);
+        Phake::verify($this->userRepository)->getCount();
         Phake::verify($this->viewService)->renderView('users/list', [
-            'users' => $this->userList,
+            'entities' => $this->userList,
             'currentPage' => 1,
             'totalPages' => 3,
             'term' => '',
@@ -108,10 +108,10 @@ class UserControllerTest extends TestCase
     {
         $this->userController->getList(2);
 
-        Phake::verify($this->userRepository)->getSortedUserList(10, 10);
-        Phake::verify($this->userRepository)->getUserCount();
+        Phake::verify($this->userRepository)->getSortedList(10, 10);
+        Phake::verify($this->userRepository)->getCount();
         Phake::verify($this->viewService)->renderView('users/list', [
-            'users' => $this->userList,
+            'entities' => $this->userList,
             'currentPage' => 2,
             'totalPages' => 3,
             'term' => '',
@@ -122,12 +122,12 @@ class UserControllerTest extends TestCase
     {
         $this->userController->getList(1, 'user0');
 
-        Phake::verify($this->userRepository, Phake::never())->getSortedUserList;
-        Phake::verify($this->userRepository, Phake::never())->getUserCount;
-        Phake::verify($this->userRepository)->getUsersMatchingUsername('user0', 10, 0);
-        Phake::verify($this->userRepository)->getUserCountMatchingUsername('user0');
+        Phake::verify($this->userRepository, Phake::never())->getSortedList;
+        Phake::verify($this->userRepository, Phake::never())->getCount;
+        Phake::verify($this->userRepository)->getListMatchingFriendlyName('user0', 10, 0);
+        Phake::verify($this->userRepository)->getCountMatchingFriendlyName('user0');
         Phake::verify($this->viewService)->renderView('users/list', [
-            'users' => $this->userList,
+            'entities' => $this->userList,
             'currentPage' => 1,
             'totalPages' => 3,
             'term' => 'user0',
@@ -138,12 +138,12 @@ class UserControllerTest extends TestCase
     {
         $this->userController->getList(2, 'user0');
 
-        Phake::verify($this->userRepository, Phake::never())->getSortedUserList;
-        Phake::verify($this->userRepository, Phake::never())->getUserCount;
-        Phake::verify($this->userRepository)->getUsersMatchingUsername('user0', 10, 10);
-        Phake::verify($this->userRepository)->getUserCountMatchingUsername('user0');
+        Phake::verify($this->userRepository, Phake::never())->getSortedList;
+        Phake::verify($this->userRepository, Phake::never())->getCount;
+        Phake::verify($this->userRepository)->getListMatchingFriendlyName('user0', 10, 10);
+        Phake::verify($this->userRepository)->getCountMatchingFriendlyName('user0');
         Phake::verify($this->viewService)->renderView('users/list', [
-            'users' => $this->userList,
+            'entities' => $this->userList,
             'currentPage' => 2,
             'totalPages' => 3,
             'term' => 'user0',
@@ -172,8 +172,8 @@ class UserControllerTest extends TestCase
         Phake::verify($this->viewService)->renderView('users/form', Phake::capture($templateData));
         Phake::verify($this->csrfService)->getNewToken();
 
-        $this->assertArrayHasKey('user', $templateData);
-        $this->assertInstanceOf(UserEntity::class, $templateData['user']);
+        $this->assertArrayHasKey('entity', $templateData);
+        $this->assertInstanceOf(UserEntity::class, $templateData['entity']);
 
         $this->assertArrayHasKey('validationResults', $templateData);
         $this->assertInstanceOf(ValidationResults::class, $templateData['validationResults']);
@@ -203,7 +203,7 @@ class UserControllerTest extends TestCase
         $this->assertTrue(password_verify('P@ssw0rd', $user->getPasswordHash()));
 
         Phake::verify($this->csrfService)->validateToken('123456');
-        Phake::verify($this->userRepository)->saveUser($user);
+        Phake::verify($this->userRepository)->saveEntity($user);
 
 
         Phake::verify($this->viewService)->redirect('/users/', 303, 'User mike.lively successfully edited!');
@@ -223,14 +223,14 @@ class UserControllerTest extends TestCase
             'token' => '123456',
         ]);
 
-        Phake::verify($this->userRepository, Phake::never())->saveUser;
+        Phake::verify($this->userRepository, Phake::never())->saveEntity;
         Phake::verify($this->viewService, Phake::never())->redirect;
 
         Phake::verify($this->viewService)->renderView('users/form', Phake::capture($templateData));
-        $this->assertArrayHasKey('user', $templateData);
-        $this->assertEquals('', $templateData['user']->getUsername());
-        $this->assertEquals('Mike Lively', $templateData['user']->getName());
-        $this->assertEquals('m@digitalsandwich.com', $templateData['user']->getEmail());
+        $this->assertArrayHasKey('entity', $templateData);
+        $this->assertEquals('', $templateData['entity']->getUsername());
+        $this->assertEquals('Mike Lively', $templateData['entity']->getName());
+        $this->assertEquals('m@digitalsandwich.com', $templateData['entity']->getEmail());
 
         $this->assertArrayHasKey('validationResults', $templateData);
         $this->assertEquals($validationResult, $templateData['validationResults']);
@@ -250,12 +250,12 @@ class UserControllerTest extends TestCase
             'token' => '123456',
         ]);
 
-        Phake::verify($this->userRepository, Phake::never())->saveUser;
+        Phake::verify($this->userRepository, Phake::never())->saveEntity;
         Phake::verify($this->viewService, Phake::never())->redirect;
 
         Phake::verify($this->viewService)->renderView('users/form', Phake::capture($templateData));
-        $this->assertArrayHasKey('user', $templateData);
-        $this->assertEquals('', $templateData['user']->getClearTextPassword());
+        $this->assertArrayHasKey('entity', $templateData);
+        $this->assertEquals('', $templateData['entity']->getClearTextPassword());
 
         $this->assertArrayHasKey('validationResults', $templateData);
         $this->assertEquals($validationResult, $templateData['validationResults']);
@@ -263,7 +263,7 @@ class UserControllerTest extends TestCase
 
     public function testPostNewDuplicateUser()
     {
-        Phake::when($this->userRepository)->saveUser->thenThrow(new DuplicateUserException('username', new \Exception()));
+        Phake::when($this->userRepository)->saveEntity->thenThrow(new DuplicateEntityException('username', new \Exception()));
 
         $this->userController->postNew([
             'username' => 'mike.lively',
@@ -313,14 +313,14 @@ class UserControllerTest extends TestCase
             'email' => 'm@digitalsandwich.com',
             'password' => 'hashedpassword'
         ]);
-        Phake::when($this->userRepository)->getUserByUsername->thenReturn($user);
+        Phake::when($this->userRepository)->getByFriendlyName->thenReturn($user);
 
         $this->userController->getDetail('mike.lively');
 
         Phake::verify($this->groupRepository)->getSortedList();
-        Phake::verify($this->userRepository)->getUserByUsername('mike.lively');
+        Phake::verify($this->userRepository)->getByFriendlyName('mike.lively');
         Phake::verify($this->viewService)->renderView('users/form', [
-            'user' => $user,
+            'entity' => $user,
             'groups' => iterator_to_array($this->groupList),
             'validationResults' => new ValidationResults([]),
             'token' => '1itfuefduyp9h',
@@ -329,7 +329,7 @@ class UserControllerTest extends TestCase
 
     public function testGetDetailNoUser()
     {
-        Phake::when($this->userRepository)->getUserByUsername->thenReturn(null);
+        Phake::when($this->userRepository)->getByFriendlyName->thenReturn(null);
 
         try
         {
@@ -354,7 +354,7 @@ class UserControllerTest extends TestCase
             'email' => 'm@digitalsandwich.com',
             'password' => 'hashedPassword'
         ]);
-        Phake::when($this->userRepository)->getUserByUsername->thenReturn($existingUser);
+        Phake::when($this->userRepository)->getByFriendlyName->thenReturn($existingUser);
         
         $this->userController->postDetail('mike.lively', [
             'username' => 'new.name',
@@ -365,12 +365,12 @@ class UserControllerTest extends TestCase
 
         Phake::verify($this->csrfService)->validateToken('123456');
 
-        Phake::verify($this->userRepository)->getUserByUsername('mike.lively');
+        Phake::verify($this->userRepository)->getByFriendlyName('mike.lively');
         /* @var $user UserEntity */
         Phake::verify($this->userValidation)->validate($existingUser);
         $this->assertEquals('new.name', $existingUser->getUsername());
 
-        Phake::verify($this->userRepository)->saveUser($existingUser);
+        Phake::verify($this->userRepository)->saveEntity($existingUser);
 
         Phake::verify($this->viewService)->redirect('/users/', 303, 'User new.name successfully edited!');
     }
@@ -385,29 +385,29 @@ class UserControllerTest extends TestCase
             'email' => 'm@digitalsandwich.com',
             'password' => 'hashedpassword'
         ]);
-        Phake::when($this->userRepository)->getUserListByUsernames->thenReturn(new \ArrayIterator([$user]));
+        Phake::when($this->userRepository)->getListByFriendlyNames->thenReturn(new \ArrayIterator([$user]));
 
         $_SERVER['HTTP_REFERER'] = '/mytest/';
 
         $this->userController->getRemove([
-            'users' => [
+            'entities' => [
                 'mike.lively',
                 'user2'
             ],
         ]);
 
-        Phake::verify($this->userRepository)->getUserListByUsernames(['mike.lively', 'user2']);
+        Phake::verify($this->userRepository)->getListByFriendlyNames(['mike.lively', 'user2']);
         Phake::verify($this->viewService)->renderView('users/removeList', Phake::capture($templateData));
         
         $this->assertEquals('1itfuefduyp9h', $templateData['token']);
-        $this->assertEquals([ $user ], iterator_to_array($templateData['users']));
+        $this->assertEquals([ $user ], iterator_to_array($templateData['entities']));
         $this->assertEquals('/mytest/', $templateData['originalUrl']);
     }
 
     public function testPostRemove()
     {
         $this->userController->postRemove([
-            'users' => [
+            'entities' => [
                 'mike.lively',
                 'user2'
             ],
@@ -415,7 +415,7 @@ class UserControllerTest extends TestCase
             'originalUrl' => '/mytest/',
         ]);
 
-        Phake::verify($this->userRepository)->deleteUsersByUsernames(['mike.lively', 'user2']);
+        Phake::verify($this->userRepository)->deleteByFriendlyNames(['mike.lively', 'user2']);
         Phake::verify($this->viewService)->redirect('/mytest/', 303, 'Users successfully removed: mike.lively, user2');
     }
 
@@ -424,14 +424,14 @@ class UserControllerTest extends TestCase
         Phake::when($this->csrfService)->validateToken->thenReturn(false);
 
         $this->userController->postRemove([
-            'users' => [
+            'entities' => [
                 'mike.lively',
                 'user2'
             ],
             'originalUrl' => '/mytest/',
         ]);
 
-        Phake::verify($this->userRepository, Phake::never())->deleteUsersByUsernames;
+        Phake::verify($this->userRepository, Phake::never())->deleteByFriendlyNames;
         Phake::verify($this->viewService)->redirect('/mytest/', 303, "Your session has expired, please try deleting those users again");
     }
 
@@ -443,7 +443,7 @@ class UserControllerTest extends TestCase
             'email' => 'm@digitalsandwich.com',
             'password' => 'hashedpassword'
         ]);
-        Phake::when($this->userRepository)->getUserByUsername->thenReturn($user);
+        Phake::when($this->userRepository)->getByFriendlyName->thenReturn($user);
 
         $this->userController->postUpdateGroups('mike.lively', [
             'token' => '1itfuefduyp9h',
@@ -451,10 +451,10 @@ class UserControllerTest extends TestCase
             'operation' => 'add'
         ]);
 
-        Phake::verify($this->userRepository)->getUserByUsername('mike.lively');
+        Phake::verify($this->userRepository)->getByFriendlyName('mike.lively');
         $this->assertEquals([1, 2, 3], $user->getGroupIds());
 
-        Phake::verify($this->userRepository)->saveUser($user);
+        Phake::verify($this->userRepository)->saveEntity($user);
 
         Phake::verify($this->viewService)->redirect('/users/detail/mike.lively', 303, "Your groups have been updated", 'success');
     }
@@ -468,7 +468,7 @@ class UserControllerTest extends TestCase
             'password' => 'hashedpassword'
         ]);
         $user->addGroups([1, 2, 3]);
-        Phake::when($this->userRepository)->getUserByUsername->thenReturn($user);
+        Phake::when($this->userRepository)->getByFriendlyName->thenReturn($user);
 
         $this->userController->postUpdateGroups('mike.lively', [
             'token' => '1itfuefduyp9h',
@@ -476,10 +476,10 @@ class UserControllerTest extends TestCase
             'operation' => 'remove'
         ]);
 
-        Phake::verify($this->userRepository)->getUserByUsername('mike.lively');
+        Phake::verify($this->userRepository)->getByFriendlyName('mike.lively');
         $this->assertEquals([1, 3], $user->getGroupIds());
 
-        Phake::verify($this->userRepository)->saveUser($user);
+        Phake::verify($this->userRepository)->saveEntity($user);
 
         Phake::verify($this->viewService)->redirect('/users/detail/mike.lively', 303, "Your groups have been updated", 'success');
     }
@@ -495,7 +495,7 @@ class UserControllerTest extends TestCase
             'password' => 'hashedpassword'
         ]);
         $user->addGroups([1, 2, 3]);
-        Phake::when($this->userRepository)->getUserByUsername->thenReturn($user);
+        Phake::when($this->userRepository)->getByFriendlyName->thenReturn($user);
 
         $this->userController->postUpdateGroups('mike.lively', [
             'token' => '1itfuefduyp9h',
@@ -503,7 +503,7 @@ class UserControllerTest extends TestCase
             'operation' => 'remove'
         ]);
 
-        Phake::verify($this->userRepository, Phake::never())->saveUser($user);
+        Phake::verify($this->userRepository, Phake::never())->saveEntity($user);
 
         Phake::verify($this->viewService)->redirect('/users/detail/mike.lively', 303, "Your session has expired, please try updating groups again", 'danger');
     }

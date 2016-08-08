@@ -165,11 +165,14 @@ abstract class SimpleCrudController
                 ->setRecommendedAction("View All {$entityTitle}s");
         }
 
-        $this->viewService->renderView($this->getTemplateFolder() . '/form', [
+        $templateData = [
             'entity' => $entity,
             'validationResults' => new ValidationResults([]),
             'token' => $this->csrfService->getNewToken(),
-        ]);
+        ];
+        
+        $templateData = $this->onGetDetailRender($templateData);
+        $this->viewService->renderView($this->getTemplateFolder() . '/form', $templateData);
     }
 
     /**
@@ -193,6 +196,17 @@ abstract class SimpleCrudController
     public function postDetail(string $name, array $entityData)
     {
         $entity = $this->crudRepository->getByFriendlyName($name);
+
+        if (empty($entity))
+        {
+            $entityTitle = $this->getEntityTitle();
+            $entityTitleLower = strtolower($entityTitle);
+            throw (new ContentNotFoundException("I could not locate the {$entityTitleLower} {$name}."))
+                ->setTitle($entityTitle . ' Not Found')
+                ->setRecommendedUrl($this->getBaseUrl())
+                ->setRecommendedAction("View All {$entityTitle}s");
+        }
+
         $entity->updateFromArray($entityData);
 
         $this->saveEntity($entity, $entityData);
@@ -212,7 +226,7 @@ abstract class SimpleCrudController
         {
             $validationResults->addErrorForField('form', 'Your session has expired, please try again');
         }
-        elseif ($validationResults->isValid())
+        elseif ($this->onSaveValidation($validationResults, $entity, $entityData) && $validationResults->isValid())
         {
             try
             {
@@ -264,5 +278,29 @@ abstract class SimpleCrudController
 
             $this->viewService->redirect($postData['originalUrl'], 303, "{$this->getEntityTitle()}s successfully removed: " . implode(', ', $entities));
         }
+    }
+
+    /**
+     * Override to augment data for the getDetail page.
+     * 
+     * @param array $templateData
+     * @return array
+     */
+    protected function onGetDetailRender(array $templateData) : array
+    {
+        return $templateData;
+    }
+
+    /**
+     * Override to do additional validation outside of the entity. If entity level validation can continue return true.
+     * 
+     * @param ValidationResults $validationResults
+     * @param $entity
+     * @param array $entityData
+     * @return bool
+     */
+    protected function onSaveValidation(ValidationResults$validationResults, $entity, array $entityData) : bool 
+    {
+        return true;
     }
 }

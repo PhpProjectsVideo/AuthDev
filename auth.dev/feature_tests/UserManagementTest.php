@@ -506,7 +506,7 @@ class UserManagementTest extends DatabaseSeleniumTestCase
         //Click the delete button
         $this->byId('user-list-delete')->click();
 
-        $this->assertEquals('http://auth.dev/users/remove?users%5B%5D=taken.user10&users%5B%5D=taken.user11', $this->url());
+        $this->assertEquals('http://auth.dev/users/remove?entities%5B%5D=taken.user10&entities%5B%5D=taken.user11', $this->url());
 
         //Cancel
         $this->byId('cancel')->click();

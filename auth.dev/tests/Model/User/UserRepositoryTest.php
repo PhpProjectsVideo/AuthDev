@@ -3,6 +3,7 @@
 namespace PhpProjects\AuthDev\Model\User;
 
 use PhpProjects\AuthDev\DatabaseTestCaseTrait;
+use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Group\GroupEntity;
 use PHPUnit\Framework\TestCase;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
@@ -59,9 +60,9 @@ class UserRepositoryTest extends TestCase
         $this->userRepository = new UserRepository($this->getPdo());
     }
 
-    public function testGetSortedUserList()
+    public function testgetSortedList()
     {
-        $userList = $this->userRepository->getSortedUserList(5);
+        $userList = $this->userRepository->getSortedList(5);
 
         $userList = iterator_to_array($userList);
         $this->assertCount(5, $userList);
@@ -77,9 +78,9 @@ class UserRepositoryTest extends TestCase
         $this->assertEquals('taken.user05', $userList[4]->getUsername());
     }
 
-    public function testGetSortedUserListWithOffset()
+    public function testgetSortedListWithOffset()
     {
-        $userList = $this->userRepository->getSortedUserList(5, 5);
+        $userList = $this->userRepository->getSortedList(5, 5);
 
         $userList = iterator_to_array($userList);
         $this->assertCount(5, $userList);
@@ -96,7 +97,7 @@ class UserRepositoryTest extends TestCase
 
     public function testGetUserListByUsernames()
     {
-        $userList = $this->userRepository->getUserListByUsernames(['taken.user01', 'taken.user06']);
+        $userList = $this->userRepository->getListByFriendlyNames(['taken.user01', 'taken.user06']);
 
         $userList = iterator_to_array($userList);
         $this->assertCount(2, $userList);
@@ -113,13 +114,13 @@ class UserRepositoryTest extends TestCase
 
     public function testGetUserCount()
     {
-        $userCount = $this->userRepository->getUserCount();
+        $userCount = $this->userRepository->getCount();
         $this->assertEquals(11, $userCount);
     }
 
     public function testGetSearchResult()
     {
-        $userList = $this->userRepository->getUsersMatchingUsername('taken.user1', 5);
+        $userList = $this->userRepository->getListMatchingFriendlyName('taken.user1', 5);
 
         $userList = iterator_to_array($userList);
         $this->assertCount(2, $userList);
@@ -134,7 +135,7 @@ class UserRepositoryTest extends TestCase
 
     public function testGetSearchResultWithOffset()
     {
-        $userList = $this->userRepository->getUsersMatchingUsername('taken.user1', 1, 1);
+        $userList = $this->userRepository->getListMatchingFriendlyName('taken.user1', 1, 1);
 
         $userList = iterator_to_array($userList);
         $this->assertCount(1, $userList);
@@ -146,7 +147,7 @@ class UserRepositoryTest extends TestCase
     
     public function testGetUserCountMatchingUsername()
     {
-        $userCount = $this->userRepository->getUserCountMatchingUsername('taken.user1');
+        $userCount = $this->userRepository->getCountMatchingFriendlyName('taken.user1');
         $this->assertEquals(2, $userCount);
     }
 
@@ -158,7 +159,7 @@ class UserRepositoryTest extends TestCase
         $user->setName('Mike Lively');
         $user->setPassword($this->password);
 
-        $this->userRepository->saveUser($user);
+        $this->userRepository->saveEntity($user);
 
         $queryTable = $this->getConnection()->createQueryTable('users',
             "SELECT * FROM users WHERE username = 'mike.lively'"
@@ -182,10 +183,10 @@ class UserRepositoryTest extends TestCase
 
         try
         {
-            $this->userRepository->saveUser($user);
+            $this->userRepository->saveEntity($user);
             $this->fail("Exception never thrown");
         }
-        catch (DuplicateUserException $e)
+        catch (DuplicateEntityException $e)
         {
             $this->assertEquals('username', $e->getField());
             $this->assertInstanceOf(\PDOException::class, $e->getPrevious());
@@ -202,10 +203,10 @@ class UserRepositoryTest extends TestCase
 
         try
         {
-            $this->userRepository->saveUser($user);
+            $this->userRepository->saveEntity($user);
             $this->fail("Exception never thrown");
         }
-        catch (DuplicateUserException $e)
+        catch (DuplicateEntityException $e)
         {
             $this->assertEquals('email', $e->getField());
             $this->assertInstanceOf(\PDOException::class, $e->getPrevious());
@@ -214,7 +215,7 @@ class UserRepositoryTest extends TestCase
 
     public function testGetUserByUsername()
     {
-        $user = $this->userRepository->getUserByUsername('taken.user01');
+        $user = $this->userRepository->getByFriendlyName('taken.user01');
 
         $this->assertEquals('taken.user01', $user->getUsername());
         $this->assertEquals('taken1@digitalsandwich.com', $user->getEmail());
@@ -226,7 +227,7 @@ class UserRepositoryTest extends TestCase
 
     public function testGetUserByUsernameReturnsNullOnNoUser()
     {
-        $user = $this->userRepository->getUserByUsername('nothere');
+        $user = $this->userRepository->getByFriendlyName('nothere');
         $this->assertNull($user);
     }
 
@@ -238,7 +239,7 @@ class UserRepositoryTest extends TestCase
         $user->setName('Mike Lively');
         $user->setPassword($this->password);
 
-        $this->userRepository->saveUser($user);
+        $this->userRepository->saveEntity($user);
 
         $queryTable = $this->getConnection()->createQueryTable('users',
             "SELECT * FROM users WHERE username = 'mike.lively'"
@@ -258,7 +259,7 @@ class UserRepositoryTest extends TestCase
 
     public function testDeleteUsersByUsernames()
     {
-        $this->userRepository->deleteUsersByUsernames(['taken.user01', 'taken.user02']);
+        $this->userRepository->deleteByFriendlyNames(['taken.user01', 'taken.user02']);
         $queryTable = $this->getConnection()->createQueryTable('users',
             "SELECT * FROM users WHERE username IN ('taken.user01', 'taken.user02')"
         );
@@ -267,7 +268,7 @@ class UserRepositoryTest extends TestCase
 
     public function testGetUserByUsernameLoadsGroups()
     {
-        $user = $this->userRepository->getUserByUsername('taken.user01');
+        $user = $this->userRepository->getByFriendlyName('taken.user01');
         $group1 = new GroupEntity(1);
         $group2 = new GroupEntity(2);
         $group3 = new GroupEntity(3);
@@ -279,11 +280,11 @@ class UserRepositoryTest extends TestCase
     
     public function testSavingGroups()
     {
-        $user = $this->userRepository->getUserByUsername('taken.user01');
+        $user = $this->userRepository->getByFriendlyName('taken.user01');
         $user->addGroups([3]);
         $user->removeGroups([1]);
         
-        $this->userRepository->saveUser($user);
+        $this->userRepository->saveEntity($user);
 
         $queryTable = $this->getConnection()->createQueryTable('users_groups',
             "SELECT groups_id FROM users_groups WHERE users_id = 6 ORDER BY groups_id"

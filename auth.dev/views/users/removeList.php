@@ -9,9 +9,9 @@
             <input type="hidden" name="originalUrl" value="<?=htmlentities($originalUrl)?>">
             <input type="hidden" name="token" value="<?=htmlentities($token)?>">
             <ul>
-                <?php foreach ($users as $user) : ?>
+                <?php foreach ($entities as $user) : ?>
                     <li><?=htmlentities($user->getUsername())?>
-                        <input type="hidden" name="users[]" value="<?=htmlentities($user->getUsername())?>">
+                        <input type="hidden" name="entities[]" value="<?=htmlentities($user->getUsername())?>">
                     </li>
                 <?php endforeach; ?>
             </ul>

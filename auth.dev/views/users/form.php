@@ -17,31 +17,31 @@
             <input type="hidden" name="token" value="<?=htmlentities($token)?>">
             <div class="form-group<?=$validationResults->getValidationErrorsForField('username') ? ' has-error' : ''?>">
                 <label for="username">Username</label>
-                <input type="text" class="form-control" id="username" name="username" placeholder="Username" value="<?=htmlentities($user->getUsername())?>">
+                <input type="text" class="form-control" id="username" name="username" placeholder="Username" value="<?=htmlentities($entity->getUsername())?>">
                 <?php if ($validationResults->getValidationErrorsForField('username')) : ?>
                     <span class="help-block"><?=htmlentities($validationResults->getValidationErrorsForField('username')[0])?></span>
                 <?php endif; ?>
             </div>
             <div class="form-group<?=$validationResults->getValidationErrorsForField('password') ? ' has-error' : ''?>">
                 <label for="clear-password">Password</label>
-                <input type="password" class="form-control" id="clear-password" name="clear-password" placeholder="Password" value="<?=htmlentities($user->getClearTextPassword())?>">
+                <input type="password" class="form-control" id="clear-password" name="clear-password" placeholder="Password" value="<?=htmlentities($entity->getClearTextPassword())?>">
                 <?php if ($validationResults->getValidationErrorsForField('password')) : ?>
                     <span class="help-block"><?=htmlentities($validationResults->getValidationErrorsForField('password')[0])?></span>
                 <?php endif; ?>
             </div>
             <div class="form-group<?=$validationResults->getValidationErrorsForField('password') ? ' has-error' : ''?>">
-                <input type="password" class="form-control" id="clear-password-confirm" name="clear-password-confirm" placeholder="Confirm Password" value="<?=htmlentities($user->getClearTextPassword())?>">
+                <input type="password" class="form-control" id="clear-password-confirm" name="clear-password-confirm" placeholder="Confirm Password" value="<?=htmlentities($entity->getClearTextPassword())?>">
             </div>
             <div class="form-group<?=$validationResults->getValidationErrorsForField('email') ? ' has-error' : ''?>">
                 <label for="email">Email</label>
-                <input type="email" class="form-control" id="email" name="email" placeholder="Email" value="<?=htmlentities($user->getEmail())?>">
+                <input type="email" class="form-control" id="email" name="email" placeholder="Email" value="<?=htmlentities($entity->getEmail())?>">
                 <?php if ($validationResults->getValidationErrorsForField('email')) : ?>
                     <span class="help-block"><?=htmlentities($validationResults->getValidationErrorsForField('email')[0])?></span>
                 <?php endif; ?>
             </div>
             <div class="form-group<?=$validationResults->getValidationErrorsForField('name') ? ' has-error' : ''?>">
                 <label for="name">Name</label>
-                <input type="text" class="form-control" id="name" name="name" placeholder="Full Name" value="<?=htmlentities($user->getName())?>">
+                <input type="text" class="form-control" id="name" name="name" placeholder="Full Name" value="<?=htmlentities($entity->getName())?>">
                 <?php if ($validationResults->getValidationErrorsForField('name')) : ?>
                     <span class="help-block"><?=htmlentities($validationResults->getValidationErrorsForField('name')[0])?></span>
                 <?php endif; ?>
@@ -56,17 +56,17 @@
                 <div id="notification"><?=htmlentities($message)?></div>
             </div>
         <?php endif; ?>
-        <?php if ($user->getId()) : ?>
+        <?php if ($entity->getId()) : ?>
             <div class="panel panel-success" id="member-groups">
                 <div class="panel-heading">
                     <h3 id="title" class="panel-title">Member Groups</h3>
                 </div>
                 <div class="panel-body">
-                    <form action="/users/update-groups/<?=htmlentities(urlencode($user->getUserName()))?>" method="post">
+                    <form action="/users/update-groups/<?=htmlentities(urlencode($entity->getUserName()))?>" method="post">
                         <?php
                         foreach ($groups as $group)
                         {
-                            if ($user->isMemberOfGroup($group))
+                            if ($entity->isMemberOfGroup($group))
                             {
                                 ?>
                                 <div class="checkbox">
@@ -89,11 +89,11 @@
                     <h3 id="title" class="panel-title">Other Groups</h3>
                 </div>
                 <div class="panel-body">
-                    <form action="/users/update-groups/<?=htmlentities(urlencode($user->getUserName()))?>" method="post">
+                    <form action="/users/update-groups/<?=htmlentities(urlencode($entity->getUserName()))?>" method="post">
                         <?php
                         foreach ($groups as $group)
                         {
-                            if (!$user->isMemberOfGroup($group))
+                            if (!$entity->isMemberOfGroup($group))
                             {
                                 ?>
                                 <div class="checkbox">

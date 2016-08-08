@@ -29,9 +29,9 @@
         </tr>
         </thead>
         <tbody>
-        <?php foreach ($users as $user) : ?>
+        <?php foreach ($entities as $user) : ?>
             <tr>
-                <td><input type="checkbox" name="users[]" value="<?=htmlentities($user->getUsername())?>" value="1"></td>
+                <td><input type="checkbox" name="entities[]" value="<?=htmlentities($user->getUsername())?>" value="1"></td>
                 <td><a href="/users/detail/<?=htmlentities(urlencode($user->getUsername()))?>"><?=htmlentities($user->getUsername())?></a></td>
                 <td><?=htmlentities($user->getName())?></td>
                 <td><?=htmlentities($user->getEmail())?></td>
