@@ -3,9 +3,9 @@
 namespace PhpProjects\AuthDev\Controllers;
 
 use PhpProjects\AuthDev\Model\Csrf\CsrfService;
+use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Group\GroupRepository;
 use PhpProjects\AuthDev\Model\Group\GroupValidation;
-use PhpProjects\AuthDev\Model\Group\DuplicateGroupException;
 use PhpProjects\AuthDev\Model\Group\GroupEntity;
 use PhpProjects\AuthDev\Model\ValidationResults;
 use PhpProjects\AuthDev\Views\ViewService;
@@ -177,7 +177,7 @@ class GroupController
                 $this->viewService->redirect('/groups/', 303, "Group {$group->getName()} successfully edited!");
                 return;
             }
-            catch (DuplicateGroupException $e)
+            catch (DuplicateEntityException $e)
             {
                 $validationResults = new ValidationResults([ $e->getField() => [ "This {$e->getField()} is already registered. Please try another." ] ]);
             }

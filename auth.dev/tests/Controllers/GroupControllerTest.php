@@ -4,7 +4,7 @@ namespace PhpProjects\AuthDev\Controllers;
 
 use Phake;
 use PhpProjects\AuthDev\Model\Csrf\CsrfService;
-use PhpProjects\AuthDev\Model\Group\DuplicateGroupException;
+use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Group\GroupEntity;
 use PhpProjects\AuthDev\Model\Group\GroupRepository;
 use PhpProjects\AuthDev\Model\Group\GroupValidation;
@@ -201,7 +201,7 @@ class GroupControllerTest extends TestCase
     }
     public function testPostNewDuplicateGroup()
     {
-        Phake::when($this->groupRepository)->saveGroup->thenThrow(new DuplicateGroupException('name', new \Exception()));
+        Phake::when($this->groupRepository)->saveEntity->thenThrow(new DuplicateEntityException('name', new \Exception()));
 
         $this->groupController->postNew([
             'name' => 'Test Group',

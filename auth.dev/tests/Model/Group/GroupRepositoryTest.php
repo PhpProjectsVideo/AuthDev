@@ -3,6 +3,7 @@
 namespace PhpProjects\AuthDev\Model\Group;
 
 use PhpProjects\AuthDev\DatabaseTestCaseTrait;
+use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PHPUnit\Framework\TestCase;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
 
@@ -147,7 +148,7 @@ class GroupRepositoryTest extends TestCase
             $this->groupRepository->saveGroup($group);
             $this->fail("Exception never thrown");
         }
-        catch (DuplicateGroupException $e)
+        catch (DuplicateEntityException $e)
         {
             $this->assertEquals('name', $e->getField());
             $this->assertInstanceOf(\PDOException::class, $e->getPrevious());
