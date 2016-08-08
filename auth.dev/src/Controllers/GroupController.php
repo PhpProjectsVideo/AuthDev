@@ -3,7 +3,6 @@
 namespace PhpProjects\AuthDev\Controllers;
 
 use PhpProjects\AuthDev\Model\Csrf\CsrfService;
-use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Group\GroupRepository;
 use PhpProjects\AuthDev\Model\Group\GroupValidation;
 use PhpProjects\AuthDev\Model\Group\GroupEntity;
@@ -13,27 +12,12 @@ use PhpProjects\AuthDev\Views\ViewService;
 /**
  * Manages operations against the group portion of our domain model
  */
-class GroupController
+class GroupController extends SimpleCrudController
 {
-    /**
-     * @var ViewService
-     */
-    private $viewService;
-
-    /**
-     * @var GroupRepository
-     */
-    private $groupRepository;
-
     /**
      * @var GroupValidation
      */
     private $groupValidation;
-
-    /**
-     * @var CsrfService
-     */
-    private $csrfService;
 
     /**
      * @param ViewService $viewService
@@ -43,10 +27,8 @@ class GroupController
      */
     public function __construct(ViewService $viewService, GroupRepository $groupRepository, GroupValidation $groupValidation, CsrfService $csrfService)
     {
-        $this->viewService = $viewService;
-        $this->groupRepository = $groupRepository;
         $this->groupValidation = $groupValidation;
-        $this->csrfService = $csrfService;
+        parent::__construct($viewService, $groupRepository, $csrfService);
     }
 
     /**
@@ -59,166 +41,79 @@ class GroupController
         return new self(ViewService::create(), GroupRepository::create(), new GroupValidation(), CsrfService::create());
     }
 
-
     /**
-     * Displays a list of groups in the system
-     *
-     * @param int $currentPage
-     * @param string $query
+     * The folder in views containing the crud templates:
+     * * form.php
+     * * list.php
+     * * removeList.php
+     * 
+     * @return string
      */
-    public function getList(int $currentPage = 1, string $query = '')
+    protected function getTemplateFolder() : string
     {
-        if (empty($query))
-        {
-            $groupList = $this->groupRepository->getSortedList(10, ($currentPage - 1) * 10);
-            $groupCount = $this->groupRepository->getCount();
-        }
-        else
-        {
-            $groupList = $this->groupRepository->getListMatchingFriendlyName($query, 10, ($currentPage - 1) * 10);
-            $groupCount = $this->groupRepository->getCountMatchingFriendlyName($query);
-        }
-
-        $templateData = [
-            'groups' => $groupList,
-            'currentPage' => $currentPage,
-            'totalPages' => $groupCount > 0 ? (int)(($groupCount - 1) / 10) + 1 : 1,
-            'term' => $query
-        ];
-
-        if (!empty($redirectMessage = $this->viewService->getRedirectMessage()))
-        {
-            $templateData['message'] = $redirectMessage;
-        }
-        $this->viewService->renderView('groups/list', $templateData);
+        return 'groups';
     }
 
     /**
-     * Displays a form to add a new group.
+     * The base url for the crud pages in this controller.
+     * 
+     * @return string
      */
-    public function getNew()
+    protected function getBaseUrl() : string
     {
-        $groupEntity = new GroupEntity();
-        $this->viewService->renderView('groups/form', [
-            'group' => $groupEntity,
-            'validationResults' => new ValidationResults([]),
-            'token' => $this->csrfService->getNewToken(),
-        ]);
+        return '/groups/';
     }
 
     /**
-     * Displays a form for editing $name
-     *
-     * @param string $name
+     * Creates a new entity with no data
+     * 
+     * @return mixed
      */
-    public function getDetail(string $name)
+    protected function getNewEntity()
     {
-        $group = $this->groupRepository->getByFriendlyName($name);
-
-        if (empty($group))
-        {
-            throw (new ContentNotFoundException("I could not locate the group {$name}."))
-                ->setTitle('Group Not Found')
-                ->setRecommendedUrl('/groups/')
-                ->setRecommendedAction('View All Groups');
-        }
-
-        $this->viewService->renderView('groups/form', [
-            'group' => $group,
-            'validationResults' => new ValidationResults([]),
-            'token' => $this->csrfService->getNewToken(),
-        ]);
+        return new GroupEntity();
     }
 
     /**
-     * Posts a form for a new group.
-     *
-     * @param array $groupData
+     * The name that the entity will be referred to in this controller.
+     * 
+     * @return string
      */
-    public function postNew(array $groupData)
+    protected function getEntityTitle() : string
     {
-        $group = GroupEntity::createFromArray($groupData);
-
-        $this->saveGroup($group, $groupData);
+        return 'Group';
     }
 
     /**
-     * Posts a form editing an existing group
-     *
-     * @param string $name
-     * @param array $groupData
+     * Create an entity based off of the array of data
+     * 
+     * @param array $entityData
+     * @return mixed
      */
-    public function postDetail(string $name, array $groupData)
+    protected function getEntityFromData(array $entityData)
     {
-        $group = $this->groupRepository->getByFriendlyName($name);
-        $group->updateFromArray($groupData);
-
-        $this->saveGroup($group, $groupData);
+        return GroupEntity::createFromArray($entityData);
     }
 
     /**
-     * Handles saving new or old groups to the system
-     *
-     * @param GroupEntity $group
+     * Returns a validation result for the given entity.
+     * 
+     * @param $entity
+     * @return ValidationResults
      */
-    protected function saveGroup(GroupEntity $group, array $groupData)
+    protected function validateEntity($entity) : ValidationResults
     {
-        $validationResults = $this->groupValidation->validate($group);
-
-        if (!$this->csrfService->validateToken($groupData['token'] ?? ''))
-        {
-            $validationResults->addErrorForField('form', 'Your session has expired, please try again');
-        }
-        elseif ($validationResults->isValid())
-        {
-            try
-            {
-                $this->groupRepository->saveEntity($group);
-                $this->viewService->redirect('/groups/', 303, "Group {$group->getName()} successfully edited!");
-                return;
-            }
-            catch (DuplicateEntityException $e)
-            {
-                $validationResults = new ValidationResults([ $e->getField() => [ "This {$e->getField()} is already registered. Please try another." ] ]);
-            }
-        }
-        $this->viewService->renderView('groups/form', [
-            'group' => $group,
-            'validationResults' => $validationResults,
-            'token' => $this->csrfService->getNewToken(),
-        ]);
+        return $this->groupValidation->validate($entity);
     }
 
     /**
-     * Displays a removal confirmation for the names provided.
-     * @param array $getData
+     * Returns a friendly name by which to refer to a given entity.
+     * 
+     * @param mixed $entity
+     * @return string
      */
-    public function getRemove(array $getData)
+    protected function getEntityFriendlyName($entity) : string
     {
-        $groups = $this->groupRepository->getListByFriendlyNames($getData['groups'] ?? []);
-        $this->viewService->renderView('groups/removeList', [
-            'groups' => $groups,
-            'token' => $this->csrfService->getNewToken(),
-            'originalUrl' => $_SERVER['HTTP_REFERER'] ?? '/groups/'
-        ]);
-    }
-
-    /**
-     * Removes the groups provided
-     * @param $_POST
-     */
-    public function postRemove(array $postData)
-    {
-        if (!$this->csrfService->validateToken($postData['token'] ?? ''))
-        {
-            $this->viewService->redirect($postData['originalUrl'], 303, "Your session has expired, please try deleting those groups again");
-        }
-        else
-        {
-            $groups = $postData['groups'] ?? [];
-            $this->groupRepository->deleteByFriendlyNames($groups);
-
-            $this->viewService->redirect($postData['originalUrl'], 303, 'Groups successfully removed: ' . implode(', ', $groups));
-        }
+        return $entity->getName();
     }
 }

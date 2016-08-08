@@ -15,7 +15,7 @@
     <input type="hidden" name="token" value="<?=htmlentities($token)?>">
     <div class="form-group<?=$validationResults->getValidationErrorsForField('name') ? ' has-error' : ''?>">
         <label for="name">Name</label>
-        <input type="text" class="form-control" id="name" name="name" placeholder="Full Name" value="<?=htmlentities($group->getName())?>">
+        <input type="text" class="form-control" id="name" name="name" placeholder="Full Name" value="<?=htmlentities($entity->getName())?>">
         <?php if ($validationResults->getValidationErrorsForField('name')) : ?>
             <span class="help-block"><?=htmlentities($validationResults->getValidationErrorsForField('name')[0])?></span>
         <?php endif; ?>

@@ -76,7 +76,7 @@ class GroupControllerTest extends TestCase
         Phake::verify($this->groupRepository)->getSortedList(10, 0);
         Phake::verify($this->groupRepository)->getCount();
         Phake::verify($this->viewService)->renderView('groups/list', [
-            'groups' => $this->groupList,
+            'entities' => $this->groupList,
             'currentPage' => 1,
             'totalPages' => 3,
             'term' => '',
@@ -90,7 +90,7 @@ class GroupControllerTest extends TestCase
         Phake::verify($this->groupRepository)->getSortedList(10, 10);
         Phake::verify($this->groupRepository)->getCount();
         Phake::verify($this->viewService)->renderView('groups/list', [
-            'groups' => $this->groupList,
+            'entities' => $this->groupList,
             'currentPage' => 2,
             'totalPages' => 3,
             'term' => '',
@@ -106,7 +106,7 @@ class GroupControllerTest extends TestCase
         Phake::verify($this->groupRepository)->getListMatchingFriendlyName('group0', 10, 0);
         Phake::verify($this->groupRepository)->getCountMatchingFriendlyName('group0');
         Phake::verify($this->viewService)->renderView('groups/list', [
-            'groups' => $this->groupList,
+            'entities' => $this->groupList,
             'currentPage' => 1,
             'totalPages' => 3,
             'term' => 'group0',
@@ -122,7 +122,7 @@ class GroupControllerTest extends TestCase
         Phake::verify($this->groupRepository)->getListMatchingFriendlyName('group0', 10, 10);
         Phake::verify($this->groupRepository)->getCountMatchingFriendlyName('group0');
         Phake::verify($this->viewService)->renderView('groups/list', [
-            'groups' => $this->groupList,
+            'entities' => $this->groupList,
             'currentPage' => 2,
             'totalPages' => 3,
             'term' => 'group0',
@@ -151,8 +151,8 @@ class GroupControllerTest extends TestCase
         Phake::verify($this->viewService)->renderView('groups/form', Phake::capture($templateData));
         Phake::verify($this->csrfService)->getNewToken();
 
-        $this->assertArrayHasKey('group', $templateData);
-        $this->assertInstanceOf(GroupEntity::class, $templateData['group']);
+        $this->assertArrayHasKey('entity', $templateData);
+        $this->assertInstanceOf(GroupEntity::class, $templateData['entity']);
 
         $this->assertArrayHasKey('validationResults', $templateData);
         $this->assertInstanceOf(ValidationResults::class, $templateData['validationResults']);
@@ -193,8 +193,8 @@ class GroupControllerTest extends TestCase
         Phake::verify($this->viewService, Phake::never())->redirect;
 
         Phake::verify($this->viewService)->renderView('groups/form', Phake::capture($templateData));
-        $this->assertArrayHasKey('group', $templateData);
-        $this->assertEquals('', $templateData['group']->getName());
+        $this->assertArrayHasKey('entity', $templateData);
+        $this->assertEquals('', $templateData['entity']->getName());
 
         $this->assertArrayHasKey('validationResults', $templateData);
         $this->assertEquals($validationResult, $templateData['validationResults']);
@@ -245,7 +245,7 @@ class GroupControllerTest extends TestCase
 
         Phake::verify($this->groupRepository)->getByFriendlyName('Test Group');
         Phake::verify($this->viewService)->renderView('groups/form', [
-            'group' => $group,
+            'entity' => $group,
             'validationResults' => new ValidationResults([]),
             'token' => '1itfuefduyp9h',
         ]);
@@ -306,7 +306,7 @@ class GroupControllerTest extends TestCase
         $_SERVER['HTTP_REFERER'] = '/mytest/';
 
         $this->groupController->getRemove([
-            'groups' => [
+            'entities' => [
                 'Test Group',
                 'group2'
             ],
@@ -316,14 +316,14 @@ class GroupControllerTest extends TestCase
         Phake::verify($this->viewService)->renderView('groups/removeList', Phake::capture($templateData));
 
         $this->assertEquals('1itfuefduyp9h', $templateData['token']);
-        $this->assertEquals([ $group ], iterator_to_array($templateData['groups']));
+        $this->assertEquals([ $group ], iterator_to_array($templateData['entities']));
         $this->assertEquals('/mytest/', $templateData['originalUrl']);
     }
 
     public function testPostRemove()
     {
         $this->groupController->postRemove([
-            'groups' => [
+            'entities' => [
                 'Test Group',
                 'group2'
             ],
@@ -340,7 +340,7 @@ class GroupControllerTest extends TestCase
         Phake::when($this->csrfService)->validateToken->thenReturn(false);
 
         $this->groupController->postRemove([
-            'groups' => [
+            'entities' => [
                 'Test Group',
                 'group2'
             ],

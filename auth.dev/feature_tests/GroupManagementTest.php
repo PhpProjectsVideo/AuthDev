@@ -231,7 +231,7 @@ class GroupManagementTest extends DatabaseSeleniumTestCase
         //Click the delete button
         $this->byId('group-list-delete')->click();
 
-        $this->assertEquals('http://auth.dev/groups/remove?groups%5B%5D=Group+1&groups%5B%5D=Group+3', $this->url());
+        $this->assertEquals('http://auth.dev/groups/remove?entities%5B%5D=Group+1&entities%5B%5D=Group+3', $this->url());
 
         //Cancel
         $this->byId('cancel')->click();

@@ -29,9 +29,9 @@
         </thead>
         <tbody>
 
-        <?php foreach ($groups as $group) : ?>
+        <?php foreach ($entities as $group) : ?>
             <tr>
-                <td><input type="checkbox" name="groups[]" value="<?=htmlentities($group->getName())?>" value="1"></td>
+                <td><input type="checkbox" name="entities[]" value="<?=htmlentities($group->getName())?>" value="1"></td>
                 <td><a href="/groups/detail/<?=htmlentities(urlencode($group->getName()))?>"><?=htmlentities($group->getName())?></a></td>
             </tr>
         <?php endforeach; ?>
