@@ -3,6 +3,7 @@
 namespace PhpProjects\AuthDev\Model\User;
 
 use PhpProjects\AuthDev\DatabaseTestCaseTrait;
+use PhpProjects\AuthDev\Model\Group\GroupEntity;
 use PHPUnit\Framework\TestCase;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
 
@@ -42,7 +43,11 @@ class UserRepositoryTest extends TestCase
                 [ 'id' => 9, 'username' => 'taken.user03', 'email' => 'taken3@digitalsandwich.com', 'name' => 'Existing User 3', 'password' => $this->password ],
                 [ 'id' => 10, 'username' => 'taken.user08', 'email' => 'taken8@digitalsandwich.com', 'name' => 'Existing User 8', 'password' => $this->password ],
                 [ 'id' => 11, 'username' => 'taken.user11', 'email' => 'taken11@digitalsandwich.com', 'name' => 'Existing User 11', 'password' => $this->password ],
-            ], 
+            ],
+            'users_groups' => [
+                [ 'users_id' => 6, 'groups_id' => 1 ],
+                [ 'users_id' => 6, 'groups_id' => 2 ],
+            ]
         ]);
     }
 
@@ -259,4 +264,33 @@ class UserRepositoryTest extends TestCase
         );
         $this->assertEquals(0, $queryTable->getRowCount());
     }
+
+    public function testGetUserByUsernameLoadsGroups()
+    {
+        $user = $this->userRepository->getUserByUsername('taken.user01');
+        $group1 = new GroupEntity(1);
+        $group2 = new GroupEntity(2);
+        $group3 = new GroupEntity(3);
+        
+        $this->assertTrue($user->isMemberOfGroup($group1));
+        $this->assertTrue($user->isMemberOfGroup($group2));
+        $this->assertFalse($user->isMemberOfGroup($group3));
+    }
+    
+    public function testSavingGroups()
+    {
+        $user = $this->userRepository->getUserByUsername('taken.user01');
+        $user->addGroups([3]);
+        $user->removeGroups([1]);
+        
+        $this->userRepository->saveUser($user);
+
+        $queryTable = $this->getConnection()->createQueryTable('users_groups',
+            "SELECT groups_id FROM users_groups WHERE users_id = 6 ORDER BY groups_id"
+        );
+        $this->assertEquals(2, $queryTable->getRowCount());
+        $this->assertEquals(2, $queryTable->getValue(0, 'groups_id'));
+        $this->assertEquals(3, $queryTable->getValue(1, 'groups_id'));
+    }
+        
 }

@@ -2,6 +2,7 @@
 
 namespace PhpProjects\AuthDev\Model\User;
 
+use PhpProjects\AuthDev\Model\Group\GroupEntity;
 use PHPUnit\Framework\TestCase;
 
 class UserEntityTest extends TestCase
@@ -88,5 +89,40 @@ class UserEntityTest extends TestCase
         ]);
 
         $this->assertEquals('hashedPassword', $this->user->getPasswordHash());
+    }
+
+    public function testAddingGroups()
+    {
+        $group1 = new GroupEntity(1);
+        $group2 = new GroupEntity(2);
+
+        $this->assertFalse($this->user->isMemberOfGroup($group1));
+        $this->assertFalse($this->user->isMemberOfGroup($group2));
+
+        $this->user->addGroups([1, 2]);
+
+        $this->assertTrue($this->user->isMemberOfGroup($group1));
+        $this->assertTrue($this->user->isMemberOfGroup($group2));
+    }
+
+    public function testRemovingGroups()
+    {
+        $group1 = new GroupEntity(1);
+        $group2 = new GroupEntity(2);
+        $this->user->addGroups([1, 2]);
+        
+        $this->user->removeGroups([1, 2]);
+
+        $this->assertFalse($this->user->isMemberOfGroup($group1));
+        $this->assertFalse($this->user->isMemberOfGroup($group2));
+    }
+    
+    public function testGetGroupIds()
+    {
+        $group1 = new GroupEntity(1);
+        $group2 = new GroupEntity(2);
+        $this->user->addGroups([1, 2]);
+        
+        $this->assertEquals([1, 2], $this->user->getGroupIds());
     }
 }

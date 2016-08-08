@@ -1,6 +1,7 @@
 <?php
 
 namespace PhpProjects\AuthDev\Model\User;
+use PhpProjects\AuthDev\Model\Group\GroupEntity;
 
 /**
  * Represents a user in the system.
@@ -46,6 +47,11 @@ class UserEntity
      * @var string
      */
     private $passwordHash;
+
+    /**
+     * @var array
+     */
+    private $groupIds = [];
     
     public function __construct(int $id = 0)
     {
@@ -210,5 +216,58 @@ class UserEntity
     {
         $this->clearTextPassword = '';
         $this->passwordHash = $passwordHash;
+    }
+
+    /**
+     * Determines if the user is in $group
+     *
+     * @param GroupEntity $group
+     * @return bool
+     */
+    public function isMemberOfGroup(GroupEntity $group) : bool
+    {
+        return isset($this->groupIds[$group->getId()]);
+    }
+
+    /**
+     * Adds the list of group ids to the member groups
+     *
+     * @param array $groupIds
+     */
+    public function addGroups(array $groupIds)
+    {
+        foreach ($groupIds as $id)
+        {
+            if (!empty($id))
+            {
+                $this->groupIds[$id] = true;
+            }
+        }
+    }
+
+    /**
+     * Removes the list of group ids from the member groups
+     *
+     * @param array $groupIds
+     */
+    public function removeGroups(array $groupIds)
+    {
+        foreach ($groupIds as $id)
+        {
+            if (!empty($id))
+            {
+                unset($this->groupIds[$id]);
+            }
+        }
+    }
+
+    /**
+     * Returns an array of group ids
+     * 
+     * @return array
+     */
+    public function getGroupIds() : array
+    {
+        return array_keys($this->groupIds);
     }
 }

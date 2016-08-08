@@ -54,6 +54,12 @@ try
                         $controller->postRemove($_POST);
                     }
                     break;
+                case 'update-groups':
+                    if ($_SERVER['REQUEST_METHOD'] == 'POST')
+                    {
+                        $controller->postUpdateGroups(urldecode($pathParts[2] ?? ''), $_POST);
+                    }
+                    break;
                 default:
                     throw (new ContentNotFoundException("I could not find the page you were looking for. You may need to start over!"))
                         ->setTitle('Page not found!');

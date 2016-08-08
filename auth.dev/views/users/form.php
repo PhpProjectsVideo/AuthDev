@@ -50,39 +50,67 @@
         </form>
     </div>
     <div class="col-md-6">
-        <div class="panel panel-success">
-            <div class="panel-heading">
-                <h3 id="title" class="panel-title">Member Groups</h3>
+        <?php if ($message ?? false) : ?>
+            <div class="alert alert-<?=htmlentities($messageStatus)?> alert-dismissable" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <div id="notification"><?=htmlentities($message)?></div>
             </div>
-            <div class="panel-body">
-                <form>
-                    <div class="checkbox">
-                        <label><input type="checkbox"> Group 1</label>
-                    </div>
-                    <div class="checkbox">
-                        <label><input type="checkbox"> Group 2</label>
-                    </div>
-                    <button type="submit" class="btn btn-success">Remove from Groups</button>
-                </form>
+        <?php endif; ?>
+        <?php if ($user->getId()) : ?>
+            <div class="panel panel-success" id="member-groups">
+                <div class="panel-heading">
+                    <h3 id="title" class="panel-title">Member Groups</h3>
+                </div>
+                <div class="panel-body">
+                    <form action="/users/update-groups/<?=htmlentities(urlencode($user->getUserName()))?>" method="post">
+                        <?php
+                        foreach ($groups as $group)
+                        {
+                            if ($user->isMemberOfGroup($group))
+                            {
+                                ?>
+                                <div class="checkbox">
+                                    <label><input type="checkbox" name="groupIds[]" value="<?=htmlentities($group->getId())?>"> <?=htmlentities($group->getName())?></label>
+                                </div>
+                        <?php
+                                
+                            }
+                        }
+                        ?>
+                        <input type="hidden" name="token" value="<?=htmlentities($token)?>">
+                        <input type="hidden" name="operation" value="remove">
+                        <button type="submit" class="btn btn-success">Remove from Groups</button>
+                    </form>
+                </div>
             </div>
-        </div>
 
-        <div class="panel panel-warning">
-            <div class="panel-heading">
-                <h3 id="title" class="panel-title">Other Groups</h3>
+            <div class="panel panel-warning" id="other-groups">
+                <div class="panel-heading">
+                    <h3 id="title" class="panel-title">Other Groups</h3>
+                </div>
+                <div class="panel-body">
+                    <form action="/users/update-groups/<?=htmlentities(urlencode($user->getUserName()))?>" method="post">
+                        <?php
+                        foreach ($groups as $group)
+                        {
+                            if (!$user->isMemberOfGroup($group))
+                            {
+                                ?>
+                                <div class="checkbox">
+                                    <label><input type="checkbox" name="groupIds[]" value="<?=htmlentities($group->getId())?>"> <?=htmlentities($group->getName())?></label>
+                                </div>
+                                <?php
+
+                            }
+                        }
+                        ?>
+                        <input type="hidden" name="token" value="<?=htmlentities($token)?>">
+                        <input type="hidden" name="operation" value="add">
+                        <button type="submit" class="btn btn-warning">Add to Groups</button>
+                    </form>
+                </div>
             </div>
-            <div class="panel-body">
-                <form>
-                    <div class="checkbox">
-                        <label><input type="checkbox"> Group 3</label>
-                    </div>
-                    <div class="checkbox">
-                        <label><input type="checkbox"> Group 4</label>
-                    </div>
-                    <button type="submit" class="btn btn-warning">Add to Groups</button>
-                </form>
-            </div>
-        </div>
+        <?php endif; ?>
     </div>
 </div>
 

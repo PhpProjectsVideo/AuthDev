@@ -4,6 +4,8 @@ namespace PhpProjects\AuthDev\Controllers;
 
 use Phake;
 use PhpProjects\AuthDev\Model\Csrf\CsrfService;
+use PhpProjects\AuthDev\Model\Group\GroupEntity;
+use PhpProjects\AuthDev\Model\Group\GroupRepository;
 use PhpProjects\AuthDev\Model\User\DuplicateUserException;
 use PhpProjects\AuthDev\Model\User\UserEntity;
 use PhpProjects\AuthDev\Model\User\UserRepository;
@@ -25,9 +27,19 @@ class UserControllerTest extends TestCase
     private $userRepository;
 
     /**
+     * @var GroupRepository
+     */
+    private $groupRepository;
+
+    /**
      * @var \ArrayIterator
      */
     private $userList;
+
+    /**
+     * @var \ArrayIterator
+     */
+    private $groupList;
     
     /**
      * @var ViewService
@@ -60,13 +72,22 @@ class UserControllerTest extends TestCase
         Phake::when($this->userRepository)->getUsersMatchingUsername->thenReturn($this->userList);
         Phake::when($this->userRepository)->getUserCountMatchingUsername->thenReturn(30);
 
+        $this->groupRepository = Phake::mock(GroupRepository::class);
+        $this->groupList = new \ArrayIterator([
+            GroupEntity::createFromArray(['id' => 1, 'name' => 'Group 1']),
+            GroupEntity::createFromArray(['id' => 2, 'name' => 'Group 2']),
+            GroupEntity::createFromArray(['id' => 3, 'name' => 'Group 3']),
+        ]);
+        Phake::when($this->groupRepository)->getSortedGroupList->thenReturn($this->groupList);
+
+
         $this->userValidation = Phake::mock(UserValidation::class);
         Phake::when($this->userValidation)->validate->thenReturn(new ValidationResults([]));
         
         $this->csrfService = Phake::mock(CsrfService::class);
         Phake::when($this->csrfService)->validateToken->thenReturn(true);
 
-        $this->userController = new UserController($this->viewService, $this->userRepository, $this->userValidation, $this->csrfService);
+        $this->userController = new UserController($this->viewService, $this->userRepository, $this->userValidation, $this->groupRepository, $this->csrfService);
     }
 
     public function testGetListPage1()
@@ -296,9 +317,11 @@ class UserControllerTest extends TestCase
 
         $this->userController->getDetail('mike.lively');
 
+        Phake::verify($this->groupRepository)->getSortedGroupList();
         Phake::verify($this->userRepository)->getUserByUsername('mike.lively');
         Phake::verify($this->viewService)->renderView('users/form', [
             'user' => $user,
+            'groups' => iterator_to_array($this->groupList),
             'validationResults' => new ValidationResults([]),
             'token' => '1itfuefduyp9h',
         ]);
@@ -410,5 +433,78 @@ class UserControllerTest extends TestCase
 
         Phake::verify($this->userRepository, Phake::never())->deleteUsersByUsernames;
         Phake::verify($this->viewService)->redirect('/mytest/', 303, "Your session has expired, please try deleting those users again");
+    }
+
+    public function testUpdateGroupsAddGroups()
+    {
+        $user = UserEntity::createFromArray([
+            'username' => 'mike.lively',
+            'name' => 'Mike Lively',
+            'email' => 'm@digitalsandwich.com',
+            'password' => 'hashedpassword'
+        ]);
+        Phake::when($this->userRepository)->getUserByUsername->thenReturn($user);
+
+        $this->userController->postUpdateGroups('mike.lively', [
+            'token' => '1itfuefduyp9h',
+            'groupIds' => [1, 2, 3],
+            'operation' => 'add'
+        ]);
+
+        Phake::verify($this->userRepository)->getUserByUsername('mike.lively');
+        $this->assertEquals([1, 2, 3], $user->getGroupIds());
+
+        Phake::verify($this->userRepository)->saveUser($user);
+
+        Phake::verify($this->viewService)->redirect('/users/detail/mike.lively', 303, "Your groups have been updated", 'success');
+    }
+
+    public function testUpdateGroupsRemovesGroups()
+    {
+        $user = UserEntity::createFromArray([
+            'username' => 'mike.lively',
+            'name' => 'Mike Lively',
+            'email' => 'm@digitalsandwich.com',
+            'password' => 'hashedpassword'
+        ]);
+        $user->addGroups([1, 2, 3]);
+        Phake::when($this->userRepository)->getUserByUsername->thenReturn($user);
+
+        $this->userController->postUpdateGroups('mike.lively', [
+            'token' => '1itfuefduyp9h',
+            'groupIds' => [2],
+            'operation' => 'remove'
+        ]);
+
+        Phake::verify($this->userRepository)->getUserByUsername('mike.lively');
+        $this->assertEquals([1, 3], $user->getGroupIds());
+
+        Phake::verify($this->userRepository)->saveUser($user);
+
+        Phake::verify($this->viewService)->redirect('/users/detail/mike.lively', 303, "Your groups have been updated", 'success');
+    }
+
+    public function testUpdateGroupsInvalidToken()
+    {
+        Phake::when($this->csrfService)->validateToken->thenReturn(false);
+
+        $user = UserEntity::createFromArray([
+            'username' => 'mike.lively',
+            'name' => 'Mike Lively',
+            'email' => 'm@digitalsandwich.com',
+            'password' => 'hashedpassword'
+        ]);
+        $user->addGroups([1, 2, 3]);
+        Phake::when($this->userRepository)->getUserByUsername->thenReturn($user);
+
+        $this->userController->postUpdateGroups('mike.lively', [
+            'token' => '1itfuefduyp9h',
+            'groupIds' => [2],
+            'operation' => 'remove'
+        ]);
+
+        Phake::verify($this->userRepository, Phake::never())->saveUser($user);
+
+        Phake::verify($this->viewService)->redirect('/users/detail/mike.lively', 303, "Your session has expired, please try updating groups again", 'danger');
     }
 }

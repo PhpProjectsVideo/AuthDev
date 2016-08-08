@@ -3,6 +3,7 @@
 namespace PhpProjects\AuthDev\Controllers;
 
 use PhpProjects\AuthDev\Model\Csrf\CsrfService;
+use PhpProjects\AuthDev\Model\Group\GroupRepository;
 use PhpProjects\AuthDev\Model\User\DuplicateUserException;
 use PhpProjects\AuthDev\Model\User\UserEntity;
 use PhpProjects\AuthDev\Model\User\UserRepository;
@@ -31,6 +32,11 @@ class UserController
     private $userValidation;
 
     /**
+     * @var GroupRepository
+     */
+    private $groupRepository;
+
+    /**
      * @var CsrfService
      */
     private $csrfService;
@@ -39,13 +45,15 @@ class UserController
      * @param ViewService $viewService
      * @param UserRepository $userRepository
      * @param UserValidation $userValidation
+     * @param GroupRepository $groupRepository
      * @param CsrfService $csrfService
      */
-    public function __construct(ViewService $viewService, UserRepository $userRepository, UserValidation $userValidation, CsrfService $csrfService)
+    public function __construct(ViewService $viewService, UserRepository $userRepository, UserValidation $userValidation, GroupRepository $groupRepository, CsrfService $csrfService)
     {
         $this->viewService = $viewService;
         $this->userRepository = $userRepository;
         $this->userValidation = $userValidation;
+        $this->groupRepository = $groupRepository;
         $this->csrfService = $csrfService;
     }
 
@@ -56,7 +64,7 @@ class UserController
      */
     public static function create() : UserController
     {
-        return new self(ViewService::create(), UserRepository::create(), new UserValidation(), CsrfService::create());
+        return new self(ViewService::create(), UserRepository::create(), new UserValidation(), GroupRepository::create(), CsrfService::create());
     }
 
     /**
@@ -122,11 +130,19 @@ class UserController
                 ->setRecommendedAction('View All Users');
         }
         
-        $this->viewService->renderView('users/form', [
+        $templateData = [
             'user' => $user,
             'validationResults' => new ValidationResults([]),
             'token' => $this->csrfService->getNewToken(),
-        ]);
+            'groups' => iterator_to_array($this->groupRepository->getSortedGroupList()),
+        ];
+        if (!empty($redirectMessage = $this->viewService->getRedirectMessage()))
+        {
+            $templateData['message'] = $redirectMessage;
+            $templateData['messageStatus'] =  $this->viewService->getRedirectStatus() ?? 'default';
+        }
+
+        $this->viewService->renderView('users/form', $templateData);
     }
 
     /**
@@ -150,6 +166,15 @@ class UserController
     public function postDetail(string $username, array $userData)
     {
         $user = $this->userRepository->getUserByUsername($username);
+
+        if (empty($user))
+        {
+            throw (new ContentNotFoundException("I could not locate the user {$username}."))
+                ->setTitle('User Not Found')
+                ->setRecommendedUrl('/users/')
+                ->setRecommendedAction('View All Users');
+        }
+
         $user->updateFromArray($userData);
 
         $this->saveUser($user, $userData);
@@ -209,7 +234,7 @@ class UserController
 
     /**
      * Removes the users provided
-     * @param $_POST
+     * @param array $postData
      */
     public function postRemove(array $postData)
     {
@@ -223,6 +248,38 @@ class UserController
             $this->userRepository->deleteUsersByUsernames($users);
             
             $this->viewService->redirect($postData['originalUrl'], 303, 'Users successfully removed: ' . implode(', ', $users));
+        }
+    }
+
+    public function postUpdateGroups(string $username, array $postData)
+    {
+        if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+        {
+            $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your session has expired, please try updating groups again", 'danger');
+        }
+        else
+        {
+            $user = $this->userRepository->getUserByUsername($username);
+
+            if (empty($user))
+            {
+                throw (new ContentNotFoundException("I could not locate the user {$username}."))
+                    ->setTitle('User Not Found')
+                    ->setRecommendedUrl('/users/')
+                    ->setRecommendedAction('View All Users');
+            }
+            if ($postData['operation'] == 'add')
+            {
+                $user->addGroups($postData['groupIds'] ?? []);
+            }
+            elseif ($postData['operation'] == 'remove')
+            {
+                $user->removeGroups($postData['groupIds'] ?? []);
+            }
+
+            $this->userRepository->saveUser($user);
+
+            $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your groups have been updated", 'success');
         }
     }
 }

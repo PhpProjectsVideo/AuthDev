@@ -2,6 +2,7 @@
 
 namespace PhpProjects\AuthDev\Model\User;
 use PhpProjects\AuthDev\Database\DatabaseService;
+use PhpProjects\AuthDev\Model\Group\GroupEntity;
 
 /**
  * Used to load and store users to and from the system.
@@ -135,7 +136,20 @@ class UserRepository
         }
         else
         {
-            return UserEntity::createFromArray($row);
+            $user = UserEntity::createFromArray($row);
+            
+            $sql = "SELECT groups_id FROM users_groups WHERE users_id = ?";
+            $stm = $this->pdo->prepare($sql);
+            $stm->execute([$user->getId()]);
+            
+            $groups = [];
+            foreach ($stm as $row)
+            {
+                $groups[] = $row['groups_id'];
+            }
+            $user->addGroups($groups);
+            
+            return $user;
         }
     }
 
@@ -166,6 +180,17 @@ class UserRepository
             if (empty($user->getId()))
             {
                 $user->setId($this->pdo->lastInsertId());
+            }
+            
+            $userGroupRemoveSql = "DELETE FROM users_groups WHERE users_id = ?";
+            $userGroupRemoveStm = $this->pdo->prepare($userGroupRemoveSql);
+            $userGroupRemoveStm->execute([$user->getId()]);
+            
+            $userGroupInsertSql = "INSERT INTO users_groups (users_id, groups_id) VALUES (?, ?)";
+            $userGroupInsertStm = $this->pdo->prepare($userGroupInsertSql);
+            foreach ($user->getGroupIds() as $id)
+            {
+                $userGroupInsertStm->execute([$user->getId(), $id]);
             }
         }
         catch (\PDOException $e)

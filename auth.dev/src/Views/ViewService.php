@@ -18,6 +18,11 @@ class ViewService
     private $redirectMessage = '';
 
     /**
+     * @var string
+     */
+    private $redirectStatus = '';
+
+    /**
      * @var array
      */
     private $session;
@@ -34,7 +39,7 @@ class ViewService
         
         if (isset($session['redirectMessage']))
         {
-            $this->redirectMessage = (string)$session['redirectMessage'];
+            list($this->redirectMessage, $this->redirectStatus) = $session['redirectMessage'];
             unset($session['redirectMessage']);
         }
     }
@@ -71,10 +76,10 @@ class ViewService
      * @param int $httpResponseCode
      * @param string $message
      */
-    public function redirect(string $location, int $httpResponseCode = 302, string $message = '')
+    public function redirect(string $location, int $httpResponseCode = 302, string $message = '', string $status = '')
     {
         $this->renderHeader("Location: {$location}", true, $httpResponseCode);
-        $_SESSION['redirectMessage'] = $message;
+        $_SESSION['redirectMessage'] = array($message, $status);
     }
 
     /**
@@ -84,6 +89,15 @@ class ViewService
     public function getRedirectMessage() : string
     {
         return $this->redirectMessage;
+    }
+
+    /**
+     * Returns the previous request's redirect message.
+     * @return string
+     */
+    public function getRedirectStatus() : string
+    {
+        return $this->redirectStatus;
     }
 
     /**

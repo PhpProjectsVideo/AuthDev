@@ -38,9 +38,16 @@ class GroupRepository
      * @param int $offset
      * @return \Traversable
      */
-    public function getSortedGroupList(int $limit, int $offset = 0) : \Traversable
+    public function getSortedGroupList(int $limit = 0, int $offset = 0) : \Traversable
     {
-        $sql = "SELECT id, name FROM groups ORDER BY name LIMIT {$offset}, {$limit}";
+        if (!empty($limit))
+        {
+            $sql = "SELECT id, name FROM groups ORDER BY name LIMIT {$offset}, {$limit}";
+        }
+        else
+        {
+            $sql = "SELECT id, name FROM groups ORDER BY name";
+        }
         $stm = $this->pdo->query($sql);
 
         foreach ($stm as $rowData)

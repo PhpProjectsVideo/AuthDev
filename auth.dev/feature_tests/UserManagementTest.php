@@ -27,6 +27,14 @@ class UserManagementTest extends DatabaseSeleniumTestCase
                 [ 'username' => 'taken.user10', 'email' => 'taken10@digitalsandwich.com', 'name' => 'Existing User 10', 'password' => 'badhash' ],
                 [ 'username' => 'taken.user11', 'email' => 'taken11@digitalsandwich.com', 'name' => 'Existing User 11', 'password' => 'badhash' ],
             ],
+            'groups' => [
+                [ 'name' => 'Group 1', ],
+                [ 'name' => 'Group 2', ],
+                [ 'name' => 'Group 3', ],
+                [ 'name' => 'Group 4', ],
+                [ 'name' => 'Group 5', ],
+            ],
+            'users_groups' => [ ],
         ]);
     }
 
@@ -526,5 +534,34 @@ class UserManagementTest extends DatabaseSeleniumTestCase
         //Make sure users are gone
         $this->assertEmpty($this->elements($this->using('link text')->value('taken.user10')));
         $this->assertEmpty($this->elements($this->using('link text')->value('taken.user11')));
+    }
+
+    public function testAdjustingGroups()
+    {
+        $this->url('http://auth.dev/users/detail/taken.user01');
+
+        $otherGroups = $this->byId('other-groups');
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 1']")->click();
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 2']");
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 3']")->click();
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 4']");
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 5']");
+        $otherGroups->byXPath(".//button[normalize-space(text())='Add to Groups']")->click();
+
+        $this->assertEquals('http://auth.dev/users/detail/taken.user01', $this->url());
+        $memberGroups = $this->byId('member-groups');
+        $memberGroups->byXPath(".//label[normalize-space(text())='Group 1']")->click();
+        $memberGroups->byXPath(".//button[normalize-space(text())='Remove from Groups']")->click();
+
+        $this->assertEquals('http://auth.dev/users/detail/taken.user01', $this->url());
+        
+        $otherGroups = $this->byId('other-groups');
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 1']");
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 2']");
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 4']");
+        $otherGroups->byXPath(".//label[normalize-space(text())='Group 5']");
+
+        $memberGroups = $this->byId('member-groups');
+        $memberGroups->byXPath(".//label[normalize-space(text())='Group 3']");
     }
 }

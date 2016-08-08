@@ -16,3 +16,9 @@ CREATE TABLE groups
 );
 CREATE UNIQUE INDEX groups_name_uindex ON groups (name);
 
+CREATE TABLE users_groups
+(
+    users_id INTEGER,
+    groups_id INTEGER
+);
+CREATE UNIQUE INDEX users_groups_userid_groupid_uindex ON users_groups (users_id, groups_id);
