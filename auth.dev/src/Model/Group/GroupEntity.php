@@ -1,6 +1,7 @@
 <?php
 
 namespace PhpProjects\AuthDev\Model\Group;
+use PhpProjects\AuthDev\Model\Permission\PermissionEntity;
 
 /**
  * Represents a group in the system.
@@ -16,6 +17,12 @@ class GroupEntity
      * @var string
      */
     private $name;
+
+    /**
+     * @var array
+     */
+    private $permissionIds = [];
+
 
     public function __construct(int $id = 0)
     {
@@ -85,5 +92,58 @@ class GroupEntity
     public function setName(string $name)
     {
         $this->name = $name;
+    }
+
+    /**
+     * Determines if the group owns a permission
+     *
+     * @param PermissionEntity $permission
+     * @return bool
+     */
+    public function isOwnerOfPermission(PermissionEntity $permission) : bool
+    {
+        return isset($this->permissionIds[$permission->getId()]);
+    }
+
+    /**
+     * Adds the list of permission ids to the group
+     *
+     * @param array $permissionIds
+     */
+    public function addPermissions(array $permissionIds)
+    {
+        foreach ($permissionIds as $id)
+        {
+            if (!empty($id))
+            {
+                $this->permissionIds[$id] = true;
+            }
+        }
+    }
+
+    /**
+     * Removes the list of permissions ids from the group
+     *
+     * @param array $permissionIds
+     */
+    public function removePermissions(array $permissionIds)
+    {
+        foreach ($permissionIds as $id)
+        {
+            if (!empty($id))
+            {
+                unset($this->permissionIds[$id]);
+            }
+        }
+    }
+
+    /**
+     * Returns an array of permissions ids assigned to the group
+     *
+     * @return array
+     */
+    public function getPermissionIds() : array
+    {
+        return array_keys($this->permissionIds);
     }
 }

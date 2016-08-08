@@ -6,6 +6,7 @@ use PhpProjects\AuthDev\Model\Csrf\CsrfService;
 use PhpProjects\AuthDev\Model\Group\GroupRepository;
 use PhpProjects\AuthDev\Model\Group\GroupValidation;
 use PhpProjects\AuthDev\Model\Group\GroupEntity;
+use PhpProjects\AuthDev\Model\Permission\PermissionRepository;
 use PhpProjects\AuthDev\Model\ValidationResults;
 use PhpProjects\AuthDev\Views\ViewService;
 
@@ -20,14 +21,21 @@ class GroupController extends SimpleCrudController
     private $groupValidation;
 
     /**
+     * @var PermissionRepository
+     */
+    private $permissionRepository;
+
+    /**
      * @param ViewService $viewService
      * @param GroupRepository $groupRepository
      * @param GroupValidation $groupValidation
+     * @param PermissionRepository $permissionRepository
      * @param CsrfService $csrfService
      */
-    public function __construct(ViewService $viewService, GroupRepository $groupRepository, GroupValidation $groupValidation, CsrfService $csrfService)
+    public function __construct(ViewService $viewService, GroupRepository $groupRepository, GroupValidation $groupValidation, PermissionRepository $permissionRepository, CsrfService $csrfService)
     {
         $this->groupValidation = $groupValidation;
+        $this->permissionRepository = $permissionRepository;
         parent::__construct($viewService, $groupRepository, $csrfService);
     }
 
@@ -38,7 +46,7 @@ class GroupController extends SimpleCrudController
      */
     public static function create() : GroupController
     {
-        return new self(ViewService::create(), GroupRepository::create(), new GroupValidation(), CsrfService::create());
+        return new self(ViewService::create(), GroupRepository::create(), new GroupValidation(), PermissionRepository::create(), CsrfService::create());
     }
 
     /**
@@ -115,5 +123,55 @@ class GroupController extends SimpleCrudController
     protected function getEntityFriendlyName($entity) : string
     {
         return $entity->getName();
+    }
+
+    protected function onGetDetailRender(array $templateData) : array
+    {
+        if (!empty($redirectMessage = $this->viewService->getRedirectMessage()))
+        {
+            $templateData['message'] = $redirectMessage;
+            $templateData['messageStatus'] =  $this->viewService->getRedirectStatus() ?? 'default';
+        }
+        $templateData['permissions'] = iterator_to_array($this->permissionRepository->getSortedList());
+        return $templateData;
+    }
+
+    /**
+     * Handles updating a groups permissions
+     *
+     * @param string $name
+     * @param array $postData
+     */
+    public function postUpdatePermissions(string $name, array $postData)
+    {
+        if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+        {
+            
+            $this->viewService->redirect('/groups/detail/' . urlencode($name), 303, "Your session has expired, please try updating permissions again", 'danger');
+        }
+        else
+        {
+            $group = $this->crudRepository->getByFriendlyName($name);
+
+            if (empty($group))
+            {
+                throw (new ContentNotFoundException("I could not locate the group {$name}."))
+                    ->setTitle('Group Not Found')
+                    ->setRecommendedUrl('/groups/')
+                    ->setRecommendedAction('View All Groups');
+            }
+            if ($postData['operation'] == 'add')
+            {
+                $group->addPermissions($postData['permissionIds'] ?? []);
+            }
+            elseif ($postData['operation'] == 'remove')
+            {
+                $group->removePermissions($postData['permissionIds'] ?? []);
+            }
+
+            $this->crudRepository->saveEntity($group);
+
+            $this->viewService->redirect('/groups/detail/' . urlencode($name), 303, "Your permissions have been updated", 'success');
+        }
     }
 }

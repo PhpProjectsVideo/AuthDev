@@ -4,6 +4,7 @@ namespace PhpProjects\AuthDev\Model\Group;
 
 use PhpProjects\AuthDev\DatabaseTestCaseTrait;
 use PhpProjects\AuthDev\Model\DuplicateEntityException;
+use PhpProjects\AuthDev\Model\Permission\PermissionEntity;
 use PHPUnit\Framework\TestCase;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
 
@@ -39,6 +40,10 @@ class GroupRepositoryTest extends TestCase
                 [ 'id' => 10, 'name' => 'Group10'],
                 [ 'id' => 11, 'name' => 'Group9'],
             ],
+            'groups_permissions' => [
+                [ 'groups_id' => 1, 'permissions_id' => 1 ],
+                [ 'groups_id' => 1, 'permissions_id' => 2 ],
+            ]
         ]);
     }
 
@@ -197,4 +202,33 @@ class GroupRepositoryTest extends TestCase
         );
         $this->assertEquals(0, $queryTable->getRowCount());
     }
+
+    public function testGetGroupByGroupnameLoadsPermissions()
+    {
+        $group = $this->groupRepository->getByFriendlyName('Group1');
+        $permission1 = new PermissionEntity(1);
+        $permission2 = new PermissionEntity(2);
+        $permission3 = new PermissionEntity(3);
+
+        $this->assertTrue($group->isOwnerOfPermission($permission1));
+        $this->assertTrue($group->isOwnerOfPermission($permission2));
+        $this->assertFalse($group->isOwnerOfPermission($permission3));
+    }
+
+    public function testSavingPermissions()
+    {
+        $group = $this->groupRepository->getByFriendlyName('Group1');
+        $group->addPermissions([3]);
+        $group->removePermissions([1]);
+
+        $this->groupRepository->saveEntity($group);
+
+        $queryTable = $this->getConnection()->createQueryTable('groups_permissions',
+            "SELECT permissions_id FROM groups_permissions WHERE groups_id = 1 ORDER BY permissions_id"
+        );
+        $this->assertEquals(2, $queryTable->getRowCount());
+        $this->assertEquals(2, $queryTable->getValue(0, 'permissions_id'));
+        $this->assertEquals(3, $queryTable->getValue(1, 'permissions_id'));
+    }
+
 }

@@ -27,6 +27,16 @@ class GroupManagementTest extends DatabaseSeleniumTestCase
                 [ 'name' => 'Group 10', ],
                 [ 'name' => 'Group 11', ],
             ],
+            
+            'permissions' => [
+                [ 'name' => 'Permission 1', ],
+                [ 'name' => 'Permission 2', ],
+                [ 'name' => 'Permission 3', ],
+                [ 'name' => 'Permission 4', ],
+                [ 'name' => 'Permission 5', ],
+            ],
+            
+            'groups_permissions' => [ ],
         ]);
     }
 
@@ -260,4 +270,34 @@ class GroupManagementTest extends DatabaseSeleniumTestCase
         $this->assertEmpty($this->elements($this->using('link text')->value('Group 1')));
         $this->assertEmpty($this->elements($this->using('link text')->value('Group 3')));
     }
+
+    public function testAdjustingPermissions()
+    {
+        $this->url('http://auth.dev/groups/detail/Group 1');
+
+        $otherPermissions = $this->byId('other-permissions');
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 1']")->click();
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 2']");
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 3']")->click();
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 4']");
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 5']");
+        $otherPermissions->byXPath(".//button[normalize-space(text())='Add to Permissions']")->click();
+
+        $this->assertEquals('http://auth.dev/groups/detail/Group+1', $this->url());
+        $memberPermissions = $this->byId('member-permissions');
+        $memberPermissions->byXPath(".//label[normalize-space(text())='Permission 1']")->click();
+        $memberPermissions->byXPath(".//button[normalize-space(text())='Remove from Permissions']")->click();
+
+        $this->assertEquals('http://auth.dev/groups/detail/Group+1', $this->url());
+
+        $otherPermissions = $this->byId('other-permissions');
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 1']");
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 2']");
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 4']");
+        $otherPermissions->byXPath(".//label[normalize-space(text())='Permission 5']");
+
+        $memberPermissions = $this->byId('member-permissions');
+        $memberPermissions->byXPath(".//label[normalize-space(text())='Permission 3']");
+    }
+
 }

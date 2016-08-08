@@ -2,6 +2,7 @@
 
 namespace PhpProjects\AuthDev\Model\Group;
 
+use PhpProjects\AuthDev\Model\Permission\PermissionEntity;
 use PHPUnit\Framework\TestCase;
 
 class GroupEntityTest extends TestCase
@@ -32,5 +33,38 @@ class GroupEntityTest extends TestCase
 
         $this->assertEquals(2, $this->group->getId());
         $this->assertEquals('Test Group 2', $this->group->getName());
+    }
+
+    public function testAddingPermissions()
+    {
+        $permission1 = new PermissionEntity(1);
+        $permission2 = new PermissionEntity(2);
+
+        $this->assertFalse($this->group->isOwnerOfPermission($permission1));
+        $this->assertFalse($this->group->isOwnerOfPermission($permission2));
+
+        $this->group->addPermissions([1, 2]);
+
+        $this->assertTrue($this->group->isOwnerOfPermission($permission1));
+        $this->assertTrue($this->group->isOwnerOfPermission($permission2));
+    }
+
+    public function testRemovingPermissions()
+    {
+        $permission1 = new PermissionEntity(1);
+        $permission2 = new PermissionEntity(2);
+        $this->group->addPermissions([1, 2]);
+
+        $this->group->removePermissions([1, 2]);
+
+        $this->assertFalse($this->group->isOwnerOfPermission($permission1));
+        $this->assertFalse($this->group->isOwnerOfPermission($permission2));
+    }
+
+    public function testGetPermissionIds()
+    {
+        $this->group->addPermissions([1, 2]);
+
+        $this->assertEquals([1, 2], $this->group->getPermissionIds());
     }
 }

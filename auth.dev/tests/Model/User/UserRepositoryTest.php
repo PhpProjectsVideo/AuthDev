@@ -265,33 +265,4 @@ class UserRepositoryTest extends TestCase
         );
         $this->assertEquals(0, $queryTable->getRowCount());
     }
-
-    public function testGetUserByUsernameLoadsGroups()
-    {
-        $user = $this->userRepository->getByFriendlyName('taken.user01');
-        $group1 = new GroupEntity(1);
-        $group2 = new GroupEntity(2);
-        $group3 = new GroupEntity(3);
-        
-        $this->assertTrue($user->isMemberOfGroup($group1));
-        $this->assertTrue($user->isMemberOfGroup($group2));
-        $this->assertFalse($user->isMemberOfGroup($group3));
-    }
-    
-    public function testSavingGroups()
-    {
-        $user = $this->userRepository->getByFriendlyName('taken.user01');
-        $user->addGroups([3]);
-        $user->removeGroups([1]);
-        
-        $this->userRepository->saveEntity($user);
-
-        $queryTable = $this->getConnection()->createQueryTable('users_groups',
-            "SELECT groups_id FROM users_groups WHERE users_id = 6 ORDER BY groups_id"
-        );
-        $this->assertEquals(2, $queryTable->getRowCount());
-        $this->assertEquals(2, $queryTable->getValue(0, 'groups_id'));
-        $this->assertEquals(3, $queryTable->getValue(1, 'groups_id'));
-    }
-        
 }

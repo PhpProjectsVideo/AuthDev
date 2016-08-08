@@ -119,8 +119,6 @@ class UserEntityTest extends TestCase
     
     public function testGetGroupIds()
     {
-        $group1 = new GroupEntity(1);
-        $group2 = new GroupEntity(2);
         $this->user->addGroups([1, 2]);
         
         $this->assertEquals([1, 2], $this->user->getGroupIds());

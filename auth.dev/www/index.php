@@ -3,6 +3,7 @@
 use PhpProjects\AuthDev\Controllers\ContentNotFoundException;
 use PhpProjects\AuthDev\Controllers\ErrorController;
 use PhpProjects\AuthDev\Controllers\GroupController;
+use PhpProjects\AuthDev\Controllers\PermissionController;
 use PhpProjects\AuthDev\Controllers\UserController;
 
 require __DIR__ . '/../src/bootstrap.php';
@@ -68,6 +69,56 @@ try
 
         case 'groups':
             $controller = GroupController::create();
+
+            switch ($pathParts[1])
+            {
+                case '':
+                    $controller->getList($_GET['page'] ?? 1, $_GET['q'] ?? '');
+                    break;
+                case 'new':
+                    if ($_SERVER['REQUEST_METHOD'] == 'GET')
+                    {
+                        $controller->getNew();
+                    }
+                    else
+                    {
+                        $controller->postNew($_POST);
+                    }
+                    break;
+                case 'detail':
+                    if ($_SERVER['REQUEST_METHOD'] == 'GET')
+                    {
+                        $controller->getDetail(urldecode($pathParts[2] ?? ''));
+                    }
+                    else
+                    {
+                        $controller->postDetail(urldecode($pathParts[2] ?? ''), $_POST);
+                    }
+                    break;
+                case 'remove':
+                    if ($_SERVER['REQUEST_METHOD'] == 'GET')
+                    {
+                        $controller->getRemove($_GET);
+                    }
+                    else
+                    {
+                        $controller->postRemove($_POST);
+                    }
+                    break;
+                case 'update-permissions':
+                    if ($_SERVER['REQUEST_METHOD'] == 'POST')
+                    {
+                        $controller->postUpdatePermissions(urldecode($pathParts[2] ?? ''), $_POST);
+                    }
+                    break;
+                default:
+                    throw (new ContentNotFoundException("I could not find the page you were looking for. You may need to start over!"))
+                        ->setTitle('Page not found!');
+            }
+            break;
+
+        case 'permissions':
+            $controller = PermissionController::create();
 
             switch ($pathParts[1])
             {

@@ -20,6 +20,7 @@
         <div class="nav navbar-nav">
             <li><a href="/users/">Users</a></li>
             <li><a href="/groups/">Groups</a></li>
+            <li><a href="/permissions/">Permissions</a></li>
         </div>
     </div>
 </nav>

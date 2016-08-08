@@ -186,6 +186,4 @@ class UserController extends SimpleCrudController
             $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your groups have been updated", 'success');
         }
     }
-
-
 }

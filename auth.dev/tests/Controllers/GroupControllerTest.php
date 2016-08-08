@@ -8,6 +8,7 @@ use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Group\GroupEntity;
 use PhpProjects\AuthDev\Model\Group\GroupRepository;
 use PhpProjects\AuthDev\Model\Group\GroupValidation;
+use PhpProjects\AuthDev\Model\Permission\PermissionRepository;
 use PhpProjects\AuthDev\Model\ValidationResults;
 use PhpProjects\AuthDev\Views\ViewService;
 use PHPUnit\Framework\TestCase;
@@ -25,9 +26,19 @@ class GroupControllerTest extends TestCase
     private $groupRepository;
 
     /**
+     * @var PermissionRepository
+     */
+    private $permissionRepository;
+
+    /**
      * @var \ArrayIterator
      */
     private $groupList;
+
+    /**
+     * @var \ArrayIterator
+     */
+    private $permissionList;
 
     /**
      * @var ViewService
@@ -60,13 +71,21 @@ class GroupControllerTest extends TestCase
         Phake::when($this->groupRepository)->getListMatchingFriendlyName->thenReturn($this->groupList);
         Phake::when($this->groupRepository)->getCountMatchingFriendlyName->thenReturn(30);
 
+        $this->permissionRepository = Phake::mock(PermissionRepository::class);
+        $this->permissionList = new \ArrayIterator([
+            GroupEntity::createFromArray(['id' => 1, 'name' => 'Permission 1']),
+            GroupEntity::createFromArray(['id' => 2, 'name' => 'Permission 2']),
+            GroupEntity::createFromArray(['id' => 3, 'name' => 'Permission 3']),
+        ]);
+        Phake::when($this->permissionRepository)->getSortedList->thenReturn($this->permissionList);
+
         $this->groupValidation = Phake::mock(GroupValidation::class);
         Phake::when($this->groupValidation)->validate->thenReturn(new ValidationResults([]));
 
         $this->csrfService = Phake::mock(CsrfService::class);
         Phake::when($this->csrfService)->validateToken->thenReturn(true);
 
-        $this->groupController = new GroupController($this->viewService, $this->groupRepository, $this->groupValidation, $this->csrfService);
+        $this->groupController = new GroupController($this->viewService, $this->groupRepository, $this->groupValidation, $this->permissionRepository, $this->csrfService);
     }
 
     public function testGetListPage1()
@@ -246,6 +265,7 @@ class GroupControllerTest extends TestCase
         Phake::verify($this->groupRepository)->getByFriendlyName('Test Group');
         Phake::verify($this->viewService)->renderView('groups/form', [
             'entity' => $group,
+            'permissions' => iterator_to_array($this->permissionList),
             'validationResults' => new ValidationResults([]),
             'token' => '1itfuefduyp9h',
         ]);
@@ -349,5 +369,69 @@ class GroupControllerTest extends TestCase
 
         Phake::verify($this->groupRepository, Phake::never())->deleteByFriendlyNames;
         Phake::verify($this->viewService)->redirect('/mytest/', 303, "Your session has expired, please try deleting those groups again");
+    }
+
+    public function testUpdatePermissionsAddPermissions()
+    {
+        $group = GroupEntity::createFromArray([
+            'name' => 'Test Group',
+        ]);
+        Phake::when($this->groupRepository)->getByFriendlyName->thenReturn($group);
+
+        $this->groupController->postUpdatePermissions('Test Group', [
+            'token' => '1itfuefduyp9h',
+            'permissionIds' => [1, 2, 3],
+            'operation' => 'add'
+        ]);
+
+        Phake::verify($this->groupRepository)->getByFriendlyName('Test Group');
+        $this->assertEquals([1, 2, 3], $group->getPermissionIds());
+
+        Phake::verify($this->groupRepository)->saveEntity($group);
+
+        Phake::verify($this->viewService)->redirect('/groups/detail/Test+Group', 303, "Your permissions have been updated", 'success');
+    }
+
+    public function testUpdatePermissionsRemovesPermissions()
+    {
+        $group = GroupEntity::createFromArray([
+            'name' => 'Test Group',
+        ]);
+        $group->addPermissions([1, 2, 3]);
+        Phake::when($this->groupRepository)->getByFriendlyName->thenReturn($group);
+
+        $this->groupController->postUpdatePermissions('Test Group', [
+            'token' => '1itfuefduyp9h',
+            'permissionIds' => [2],
+            'operation' => 'remove'
+        ]);
+
+        Phake::verify($this->groupRepository)->getByFriendlyName('Test Group');
+        $this->assertEquals([1, 3], $group->getPermissionIds());
+
+        Phake::verify($this->groupRepository)->saveEntity($group);
+
+        Phake::verify($this->viewService)->redirect('/groups/detail/Test+Group', 303, "Your permissions have been updated", 'success');
+    }
+
+    public function testUpdatePermissionsInvalidToken()
+    {
+        Phake::when($this->csrfService)->validateToken->thenReturn(false);
+
+        $group = GroupEntity::createFromArray([
+            'name' => 'Test Group',
+        ]);
+        $group->addPermissions([1, 2, 3]);
+        Phake::when($this->groupRepository)->getByFriendlyName->thenReturn($group);
+
+        $this->groupController->postUpdatePermissions('Test Group', [
+            'token' => '1itfuefduyp9h',
+            'permissionIds' => [2],
+            'operation' => 'remove'
+        ]);
+
+        Phake::verify($this->groupRepository, Phake::never())->saveEntity($group);
+
+        Phake::verify($this->viewService)->redirect('/groups/detail/Test+Group', 303, "Your session has expired, please try updating permissions again", 'danger');
     }
 }
