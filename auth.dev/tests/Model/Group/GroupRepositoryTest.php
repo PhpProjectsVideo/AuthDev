@@ -51,7 +51,7 @@ class GroupRepositoryTest extends TestCase
 
     public function testGetSortedGroupList()
     {
-        $groupList = $this->groupRepository->getSortedGroupList(5);
+        $groupList = $this->groupRepository->getSortedList(5);
 
         $groupList = iterator_to_array($groupList);
         $this->assertCount(5, $groupList);
@@ -66,7 +66,7 @@ class GroupRepositoryTest extends TestCase
 
     public function testGetSortedGroupListWithOffset()
     {
-        $groupList = $this->groupRepository->getSortedGroupList(5, 5);
+        $groupList = $this->groupRepository->getSortedList(5, 5);
 
         $groupList = iterator_to_array($groupList);
         $this->assertCount(5, $groupList);
@@ -81,7 +81,7 @@ class GroupRepositoryTest extends TestCase
 
     public function testGetGroupListByNames()
     {
-        $groupList = $this->groupRepository->getGroupListByNames(['Group1', 'Group6']);
+        $groupList = $this->groupRepository->getListByFriendlyNames(['Group1', 'Group6']);
 
         $groupList = iterator_to_array($groupList);
         $this->assertCount(2, $groupList);
@@ -92,13 +92,13 @@ class GroupRepositoryTest extends TestCase
 
     public function testGetGroupCount()
     {
-        $groupCount = $this->groupRepository->getGroupCount();
+        $groupCount = $this->groupRepository->getCount();
         $this->assertEquals(11, $groupCount);
     }
 
     public function testGetSearchResult()
     {
-        $groupList = $this->groupRepository->getGroupsMatchingName('group1', 5);
+        $groupList = $this->groupRepository->getListMatchingFriendlyName('group1', 5);
 
         $groupList = iterator_to_array($groupList);
         $this->assertCount(3, $groupList);
@@ -109,7 +109,7 @@ class GroupRepositoryTest extends TestCase
 
     public function testGetSearchResultWithOffset()
     {
-        $groupList = $this->groupRepository->getGroupsMatchingName('Group1', 1, 1);
+        $groupList = $this->groupRepository->getListMatchingFriendlyName('Group1', 1, 1);
 
         $groupList = iterator_to_array($groupList);
         $this->assertCount(1, $groupList);
@@ -118,7 +118,7 @@ class GroupRepositoryTest extends TestCase
 
     public function testGetGroupCountMatchingName()
     {
-        $groupCount = $this->groupRepository->getGroupCountMatchingName('Group1');
+        $groupCount = $this->groupRepository->getCountMatchingFriendlyName('Group1');
         $this->assertEquals(3, $groupCount);
     }
 
@@ -127,7 +127,7 @@ class GroupRepositoryTest extends TestCase
         $group = new GroupEntity();
         $group->setName('Test Group 1');
 
-        $this->groupRepository->saveGroup($group);
+        $this->groupRepository->saveEntity($group);
 
         $queryTable = $this->getConnection()->createQueryTable('groups',
             "SELECT * FROM groups WHERE name = 'Test Group 1'"
@@ -145,7 +145,7 @@ class GroupRepositoryTest extends TestCase
 
         try
         {
-            $this->groupRepository->saveGroup($group);
+            $this->groupRepository->saveEntity($group);
             $this->fail("Exception never thrown");
         }
         catch (DuplicateEntityException $e)
@@ -157,7 +157,7 @@ class GroupRepositoryTest extends TestCase
 
     public function testGetGroupByName()
     {
-        $group = $this->groupRepository->getGroupByName('Group1');
+        $group = $this->groupRepository->getByFriendlyName('Group1');
 
         $this->assertEquals('Group1', $group->getName());
         $this->assertEquals(1, $group->getId());
@@ -165,7 +165,7 @@ class GroupRepositoryTest extends TestCase
 
     public function testGetGroupByNameReturnsNullOnNoGroup()
     {
-        $group = $this->groupRepository->getGroupByName('nothere');
+        $group = $this->groupRepository->getByFriendlyName('nothere');
         $this->assertNull($group);
     }
 
@@ -174,7 +174,7 @@ class GroupRepositoryTest extends TestCase
         $group = new GroupEntity(1);
         $group->setName('Test Group');
 
-        $this->groupRepository->saveGroup($group);
+        $this->groupRepository->saveEntity($group);
 
         $queryTable = $this->getConnection()->createQueryTable('groups',
             "SELECT * FROM groups WHERE name = 'Test Group'"
@@ -191,7 +191,7 @@ class GroupRepositoryTest extends TestCase
 
     public function testDeleteGroupsByNames()
     {
-        $this->groupRepository->deleteGroupsByNames(['Group1', 'Group2']);
+        $this->groupRepository->deleteByFriendlyNames(['Group1', 'Group2']);
         $queryTable = $this->getConnection()->createQueryTable('groups',
             "SELECT * FROM groups WHERE name IN ('Group1', 'Group2')"
         );

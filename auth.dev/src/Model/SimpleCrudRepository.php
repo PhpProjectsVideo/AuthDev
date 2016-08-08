@@ -100,13 +100,13 @@ abstract class SimpleCrudRepository
     }
 
     /**
-     * Returns a sorted list of up to $limit groups with an offset of $offset.
+     * Returns a sorted list of up to $limit entities with an offset of $offset.
      *
      * @param int $limit
      * @param int $offset
      * @return \Traversable
      */
-    public function getSortedGroupList(int $limit = 0, int $offset = 0) : \Traversable
+    public function getSortedList(int $limit = 0, int $offset = 0) : \Traversable
     {
         if (!empty($limit))
         {
@@ -124,7 +124,7 @@ abstract class SimpleCrudRepository
         }
     }
 
-    public function getGroupListByNames(array $names) : \Traversable
+    public function getListByFriendlyNames(array $names) : \Traversable
     {
         if (empty($names))
         {
@@ -142,11 +142,11 @@ abstract class SimpleCrudRepository
     }
 
     /**
-     * Returns the number of groups in the table
+     * Returns the number of entities in the table
      *
      * @return int
      */
-    public function getGroupCount() : int
+    public function getCount() : int
     {
         $sql = "SELECT COUNT(*) FROM {$this->getTable()}";
 
@@ -156,16 +156,14 @@ abstract class SimpleCrudRepository
     }
 
     /**
-     * Returns a sorted list of up to $limit groups whose name begin with $query with an offset of $offset.
-     *
-     * Groups will be sorted by their name.
+     * Returns a sorted list of up to $limit entity whose friendly name begin with $query with an offset of $offset.
      *
      * @param string $query
      * @param int $limit
      * @param int $offset
      * @return \Traversable
      */
-    public function getGroupsMatchingName(string $query, int $limit, int $offset = 0) : \Traversable
+    public function getListMatchingFriendlyName(string $query, int $limit, int $offset = 0) : \Traversable
     {
         $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} LIKE ? ORDER BY {$this->getDefaultSortColumn()} LIMIT {$offset}, {$limit}";
         $stm = $this->pdo->prepare($sql);
@@ -178,12 +176,12 @@ abstract class SimpleCrudRepository
     }
 
     /**
-     * Returns the number of groups whose name begin with $query
+     * Returns the number of entities whose friendly name begin with $query
      *
      * @param string $query
      * @return int
      */
-    public function getGroupCountMatchingName(string $query) : int
+    public function getCountMatchingFriendlyName(string $query) : int
     {
         $sql = "SELECT COUNT(*) FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} LIKE ?";
         $stm = $this->pdo->prepare($sql);
@@ -192,12 +190,12 @@ abstract class SimpleCrudRepository
     }
 
     /**
-     * Returns the group specified by $name or null if the group does not exist.
+     * Returns the entity specified by friendly name $name or null if the entity does not exist.
      *
      * @param string $name
-     * @return null|GroupEntity
+     * @return mixed
      */
-    public function getGroupByName(string $name)
+    public function getByFriendlyName(string $name)
     {
         $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} = ?";
         $stm = $this->pdo->prepare($sql);
@@ -215,14 +213,14 @@ abstract class SimpleCrudRepository
     }
 
     /**
-     * Saves a new or existing group entity to the repository
+     * Saves a new or existing entity to the repository
      *
-     * @param $group
+     * @param mixed $entity
      * @throws DuplicateEntityException when an entity with the same unique key already exists
      */
-    public function saveGroup($group)
+    public function saveEntity($entity)
     {
-        if (empty($group->getId()))
+        if (empty($entity->getId()))
         {
             $stmPlaceholders = [];
             foreach ($this->getColumnList() as $column)
@@ -232,7 +230,7 @@ abstract class SimpleCrudRepository
             $stmPlaceholders = implode(',', $stmPlaceholders);
             $sql = "INSERT INTO {$this->getTable()} ({$this->getSqlColumnList()}) VALUES ({$stmPlaceholders})";
             $stm = $this->pdo->prepare($sql);
-            $sqlParameters = $this->getRowFromEntity($group);
+            $sqlParameters = $this->getRowFromEntity($entity);
         }
         else
         {
@@ -244,16 +242,16 @@ abstract class SimpleCrudRepository
             $stmPlaceholders = implode(',', $stmPlaceholders);
             $sql = "UPDATE {$this->getTable()} SET {$stmPlaceholders} WHERE id = :id";
             $stm = $this->pdo->prepare($sql);
-            $sqlParameters = $this->getRowFromEntity($group);
-            $sqlParameters['id'] = $this->getEntityId($group);
+            $sqlParameters = $this->getRowFromEntity($entity);
+            $sqlParameters['id'] = $this->getEntityId($entity);
         }
 
         try
         {
             $stm->execute($sqlParameters);
-            if (empty($this->getEntityId($group)))
+            if (empty($this->getEntityId($entity)))
             {
-                $this->setEntityId($group, $this->pdo->lastInsertId());
+                $this->setEntityId($entity, $this->pdo->lastInsertId());
             }
         }
         catch (\PDOException $e)
@@ -269,7 +267,11 @@ abstract class SimpleCrudRepository
         }
     }
 
-    public function deleteGroupsByNames(array $names)
+    /**
+     * Deletes entities with the given friendly names
+     * @param array $names
+     */
+    public function deleteByFriendlyNames(array $names)
     {
         if (empty($names))
         {

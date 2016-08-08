@@ -78,7 +78,7 @@ class UserControllerTest extends TestCase
             GroupEntity::createFromArray(['id' => 2, 'name' => 'Group 2']),
             GroupEntity::createFromArray(['id' => 3, 'name' => 'Group 3']),
         ]);
-        Phake::when($this->groupRepository)->getSortedGroupList->thenReturn($this->groupList);
+        Phake::when($this->groupRepository)->getSortedList->thenReturn($this->groupList);
 
 
         $this->userValidation = Phake::mock(UserValidation::class);
@@ -317,7 +317,7 @@ class UserControllerTest extends TestCase
 
         $this->userController->getDetail('mike.lively');
 
-        Phake::verify($this->groupRepository)->getSortedGroupList();
+        Phake::verify($this->groupRepository)->getSortedList();
         Phake::verify($this->userRepository)->getUserByUsername('mike.lively');
         Phake::verify($this->viewService)->renderView('users/form', [
             'user' => $user,

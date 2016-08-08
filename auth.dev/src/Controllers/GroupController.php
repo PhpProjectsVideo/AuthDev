@@ -70,13 +70,13 @@ class GroupController
     {
         if (empty($query))
         {
-            $groupList = $this->groupRepository->getSortedGroupList(10, ($currentPage - 1) * 10);
-            $groupCount = $this->groupRepository->getGroupCount();
+            $groupList = $this->groupRepository->getSortedList(10, ($currentPage - 1) * 10);
+            $groupCount = $this->groupRepository->getCount();
         }
         else
         {
-            $groupList = $this->groupRepository->getGroupsMatchingName($query, 10, ($currentPage - 1) * 10);
-            $groupCount = $this->groupRepository->getGroupCountMatchingName($query);
+            $groupList = $this->groupRepository->getListMatchingFriendlyName($query, 10, ($currentPage - 1) * 10);
+            $groupCount = $this->groupRepository->getCountMatchingFriendlyName($query);
         }
 
         $templateData = [
@@ -113,7 +113,7 @@ class GroupController
      */
     public function getDetail(string $name)
     {
-        $group = $this->groupRepository->getGroupByName($name);
+        $group = $this->groupRepository->getByFriendlyName($name);
 
         if (empty($group))
         {
@@ -150,7 +150,7 @@ class GroupController
      */
     public function postDetail(string $name, array $groupData)
     {
-        $group = $this->groupRepository->getGroupByName($name);
+        $group = $this->groupRepository->getByFriendlyName($name);
         $group->updateFromArray($groupData);
 
         $this->saveGroup($group, $groupData);
@@ -173,7 +173,7 @@ class GroupController
         {
             try
             {
-                $this->groupRepository->saveGroup($group);
+                $this->groupRepository->saveEntity($group);
                 $this->viewService->redirect('/groups/', 303, "Group {$group->getName()} successfully edited!");
                 return;
             }
@@ -195,7 +195,7 @@ class GroupController
      */
     public function getRemove(array $getData)
     {
-        $groups = $this->groupRepository->getGroupListByNames($getData['groups'] ?? []);
+        $groups = $this->groupRepository->getListByFriendlyNames($getData['groups'] ?? []);
         $this->viewService->renderView('groups/removeList', [
             'groups' => $groups,
             'token' => $this->csrfService->getNewToken(),
@@ -216,7 +216,7 @@ class GroupController
         else
         {
             $groups = $postData['groups'] ?? [];
-            $this->groupRepository->deleteGroupsByNames($groups);
+            $this->groupRepository->deleteByFriendlyNames($groups);
 
             $this->viewService->redirect($postData['originalUrl'], 303, 'Groups successfully removed: ' . implode(', ', $groups));
         }

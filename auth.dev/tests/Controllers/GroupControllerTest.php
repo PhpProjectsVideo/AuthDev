@@ -55,10 +55,10 @@ class GroupControllerTest extends TestCase
         $this->viewService = Phake::mock(ViewService::class);
 
         $this->groupRepository = Phake::mock(GroupRepository::class);
-        Phake::when($this->groupRepository)->getSortedGroupList->thenReturn($this->groupList);
-        Phake::when($this->groupRepository)->getGroupCount->thenReturn(30);
-        Phake::when($this->groupRepository)->getGroupsMatchingName->thenReturn($this->groupList);
-        Phake::when($this->groupRepository)->getGroupCountMatchingName->thenReturn(30);
+        Phake::when($this->groupRepository)->getSortedList->thenReturn($this->groupList);
+        Phake::when($this->groupRepository)->getCount->thenReturn(30);
+        Phake::when($this->groupRepository)->getListMatchingFriendlyName->thenReturn($this->groupList);
+        Phake::when($this->groupRepository)->getCountMatchingFriendlyName->thenReturn(30);
 
         $this->groupValidation = Phake::mock(GroupValidation::class);
         Phake::when($this->groupValidation)->validate->thenReturn(new ValidationResults([]));
@@ -73,8 +73,8 @@ class GroupControllerTest extends TestCase
     {
         $this->groupController->getList(1);
 
-        Phake::verify($this->groupRepository)->getSortedGroupList(10, 0);
-        Phake::verify($this->groupRepository)->getGroupCount();
+        Phake::verify($this->groupRepository)->getSortedList(10, 0);
+        Phake::verify($this->groupRepository)->getCount();
         Phake::verify($this->viewService)->renderView('groups/list', [
             'groups' => $this->groupList,
             'currentPage' => 1,
@@ -87,8 +87,8 @@ class GroupControllerTest extends TestCase
     {
         $this->groupController->getList(2);
 
-        Phake::verify($this->groupRepository)->getSortedGroupList(10, 10);
-        Phake::verify($this->groupRepository)->getGroupCount();
+        Phake::verify($this->groupRepository)->getSortedList(10, 10);
+        Phake::verify($this->groupRepository)->getCount();
         Phake::verify($this->viewService)->renderView('groups/list', [
             'groups' => $this->groupList,
             'currentPage' => 2,
@@ -101,10 +101,10 @@ class GroupControllerTest extends TestCase
     {
         $this->groupController->getList(1, 'group0');
 
-        Phake::verify($this->groupRepository, Phake::never())->getSortedGroupList;
-        Phake::verify($this->groupRepository, Phake::never())->getGroupCount;
-        Phake::verify($this->groupRepository)->getGroupsMatchingName('group0', 10, 0);
-        Phake::verify($this->groupRepository)->getGroupCountMatchingName('group0');
+        Phake::verify($this->groupRepository, Phake::never())->getSortedList;
+        Phake::verify($this->groupRepository, Phake::never())->getCount;
+        Phake::verify($this->groupRepository)->getListMatchingFriendlyName('group0', 10, 0);
+        Phake::verify($this->groupRepository)->getCountMatchingFriendlyName('group0');
         Phake::verify($this->viewService)->renderView('groups/list', [
             'groups' => $this->groupList,
             'currentPage' => 1,
@@ -117,10 +117,10 @@ class GroupControllerTest extends TestCase
     {
         $this->groupController->getList(2, 'group0');
 
-        Phake::verify($this->groupRepository, Phake::never())->getSortedGroupList;
-        Phake::verify($this->groupRepository, Phake::never())->getGroupCount;
-        Phake::verify($this->groupRepository)->getGroupsMatchingName('group0', 10, 10);
-        Phake::verify($this->groupRepository)->getGroupCountMatchingName('group0');
+        Phake::verify($this->groupRepository, Phake::never())->getSortedList;
+        Phake::verify($this->groupRepository, Phake::never())->getCount;
+        Phake::verify($this->groupRepository)->getListMatchingFriendlyName('group0', 10, 10);
+        Phake::verify($this->groupRepository)->getCountMatchingFriendlyName('group0');
         Phake::verify($this->viewService)->renderView('groups/list', [
             'groups' => $this->groupList,
             'currentPage' => 2,
@@ -174,7 +174,7 @@ class GroupControllerTest extends TestCase
         $this->assertEquals('Test Group', $group->getName());
 
         Phake::verify($this->csrfService)->validateToken('123456');
-        Phake::verify($this->groupRepository)->saveGroup($group);
+        Phake::verify($this->groupRepository)->saveEntity($group);
 
 
         Phake::verify($this->viewService)->redirect('/groups/', 303, 'Group Test Group successfully edited!');
@@ -189,7 +189,7 @@ class GroupControllerTest extends TestCase
             'name' => '',
         ]);
 
-        Phake::verify($this->groupRepository, Phake::never())->saveGroup;
+        Phake::verify($this->groupRepository, Phake::never())->saveEntity;
         Phake::verify($this->viewService, Phake::never())->redirect;
 
         Phake::verify($this->viewService)->renderView('groups/form', Phake::capture($templateData));
@@ -239,11 +239,11 @@ class GroupControllerTest extends TestCase
         $group = GroupEntity::createFromArray([
             'name' => 'Test Group',
         ]);
-        Phake::when($this->groupRepository)->getGroupByName->thenReturn($group);
+        Phake::when($this->groupRepository)->getByFriendlyName->thenReturn($group);
 
         $this->groupController->getDetail('Test Group');
 
-        Phake::verify($this->groupRepository)->getGroupByName('Test Group');
+        Phake::verify($this->groupRepository)->getByFriendlyName('Test Group');
         Phake::verify($this->viewService)->renderView('groups/form', [
             'group' => $group,
             'validationResults' => new ValidationResults([]),
@@ -253,7 +253,7 @@ class GroupControllerTest extends TestCase
 
     public function testGetDetailNoGroup()
     {
-        Phake::when($this->groupRepository)->getGroupByName->thenReturn(null);
+        Phake::when($this->groupRepository)->getByFriendlyName->thenReturn(null);
 
         try
         {
@@ -275,7 +275,7 @@ class GroupControllerTest extends TestCase
         $existingGroup = GroupEntity::createFromArray([
             'name' => 'Test Group',
         ]);
-        Phake::when($this->groupRepository)->getGroupByName->thenReturn($existingGroup);
+        Phake::when($this->groupRepository)->getByFriendlyName->thenReturn($existingGroup);
 
         $this->groupController->postDetail('Test Group', [
             'name' => 'Test Group 2',
@@ -284,12 +284,12 @@ class GroupControllerTest extends TestCase
 
         Phake::verify($this->csrfService)->validateToken('123456');
 
-        Phake::verify($this->groupRepository)->getGroupByName('Test Group');
+        Phake::verify($this->groupRepository)->getByFriendlyName('Test Group');
         /* @var $group GroupEntity */
         Phake::verify($this->groupValidation)->validate($existingGroup);
         $this->assertEquals('Test Group 2', $existingGroup->getName());
 
-        Phake::verify($this->groupRepository)->saveGroup($existingGroup);
+        Phake::verify($this->groupRepository)->saveEntity($existingGroup);
 
         Phake::verify($this->viewService)->redirect('/groups/', 303, 'Group Test Group 2 successfully edited!');
     }
@@ -301,7 +301,7 @@ class GroupControllerTest extends TestCase
         $group = GroupEntity::createFromArray([
             'name' => 'Test Group',
         ]);
-        Phake::when($this->groupRepository)->getGroupListByNames->thenReturn(new \ArrayIterator([$group]));
+        Phake::when($this->groupRepository)->getListByFriendlyNames->thenReturn(new \ArrayIterator([$group]));
 
         $_SERVER['HTTP_REFERER'] = '/mytest/';
 
@@ -312,7 +312,7 @@ class GroupControllerTest extends TestCase
             ],
         ]);
 
-        Phake::verify($this->groupRepository)->getGroupListByNames(['Test Group', 'group2']);
+        Phake::verify($this->groupRepository)->getListByFriendlyNames(['Test Group', 'group2']);
         Phake::verify($this->viewService)->renderView('groups/removeList', Phake::capture($templateData));
 
         $this->assertEquals('1itfuefduyp9h', $templateData['token']);
@@ -331,7 +331,7 @@ class GroupControllerTest extends TestCase
             'originalUrl' => '/mytest/',
         ]);
 
-        Phake::verify($this->groupRepository)->deleteGroupsByNames(['Test Group', 'group2']);
+        Phake::verify($this->groupRepository)->deleteByFriendlyNames(['Test Group', 'group2']);
         Phake::verify($this->viewService)->redirect('/mytest/', 303, 'Groups successfully removed: Test Group, group2');
     }
 
@@ -347,7 +347,7 @@ class GroupControllerTest extends TestCase
             'originalUrl' => '/mytest/',
         ]);
 
-        Phake::verify($this->groupRepository, Phake::never())->deleteGroupsByNames;
+        Phake::verify($this->groupRepository, Phake::never())->deleteByFriendlyNames;
         Phake::verify($this->viewService)->redirect('/mytest/', 303, "Your session has expired, please try deleting those groups again");
     }
 }

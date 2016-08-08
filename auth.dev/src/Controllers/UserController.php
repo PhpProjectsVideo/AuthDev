@@ -134,7 +134,7 @@ class UserController
             'user' => $user,
             'validationResults' => new ValidationResults([]),
             'token' => $this->csrfService->getNewToken(),
-            'groups' => iterator_to_array($this->groupRepository->getSortedGroupList()),
+            'groups' => iterator_to_array($this->groupRepository->getSortedList()),
         ];
         if (!empty($redirectMessage = $this->viewService->getRedirectMessage()))
         {
