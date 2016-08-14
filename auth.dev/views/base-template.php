@@ -17,10 +17,22 @@
         <div class="navbar-header">
             <a class="navbar-brand" href="/">Auth Manager</a>
         </div>
-        <div class="nav navbar-nav">
-            <li><a href="/users/">Users</a></li>
-            <li><a href="/groups/">Groups</a></li>
-            <li><a href="/permissions/">Permissions</a></li>
+        <div class="collapse navbar-collapse">
+            <div class="nav navbar-nav">
+                <li><a href="/users/">Users</a></li>
+                <li><a href="/groups/">Groups</a></li>
+                <li><a href="/permissions/">Permissions</a></li>
+            </div>
+            <?php if (\PhpProjects\AuthDev\Authentication\LoginService::create()->isSessionAuthenticated()) : ?>
+                <form action="/auth/logout" method="post" class="navbar-form navbar-right">
+                    <input type="hidden" name="originalUrl" value="<?=htmlentities($_SERVER['REQUEST_URI'])?>">
+                    <button type="submit" class="btn btn-default" id="logout">Logout</button>
+                </form>
+            <?php else : ?>
+                <div class="nav navbar-nav navbar-right">
+                    <a class="btn btn-default navbar-btn" href="/auth/login" id="login">Login</a>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </nav>

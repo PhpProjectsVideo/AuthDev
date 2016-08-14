@@ -3,6 +3,7 @@
 use PhpProjects\AuthDev\Controllers\ContentNotFoundException;
 use PhpProjects\AuthDev\Controllers\ErrorController;
 use PhpProjects\AuthDev\Controllers\GroupController;
+use PhpProjects\AuthDev\Controllers\LoginController;
 use PhpProjects\AuthDev\Controllers\PermissionController;
 use PhpProjects\AuthDev\Controllers\UserController;
 
@@ -17,6 +18,31 @@ try
 {
     switch ($pathParts[0])
     {
+        case 'auth':
+            $controller = LoginController::create();
+            switch ($pathParts[1])
+            {
+                case 'login':
+                    if ($_SERVER['REQUEST_METHOD'] == 'GET')
+                    {
+                        $controller->getLogin($_GET['originalUrl'] ?? '');
+                    }
+                    else
+                    {
+                        $controller->postLogin($_POST);
+                    }
+                    break;
+                case 'logout':
+                    if ($_SERVER['REQUEST_METHOD'] == 'POST')
+                    {
+                        $controller->postLogout($_POST);
+                    }
+                    break;
+                default:
+                    throw (new ContentNotFoundException("I could not find the page you were looking for. You may need to start over!"))
+                        ->setTitle('Page not found!');
+            }
+            break;
         case 'users':
             $controller = UserController::create();
 

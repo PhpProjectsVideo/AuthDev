@@ -3,6 +3,7 @@
 namespace PhpProjects\AuthDev\Controllers;
 
 use Phake;
+use PhpProjects\AuthDev\Authentication\LoginService;
 use PhpProjects\AuthDev\Model\Csrf\CsrfService;
 use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Group\GroupEntity;
@@ -56,6 +57,11 @@ class UserControllerTest extends TestCase
      */
     private $csrfService;
 
+    /**
+     * @var LoginService
+     */
+    private $loginService;
+
     protected function setUp()
     {
         $this->userList = new \ArrayIterator([
@@ -86,14 +92,18 @@ class UserControllerTest extends TestCase
         
         $this->csrfService = Phake::mock(CsrfService::class);
         Phake::when($this->csrfService)->validateToken->thenReturn(true);
+        
+        $this->loginService = Phake::mock(LoginService::class);
 
-        $this->userController = new UserController($this->viewService, $this->userRepository, $this->userValidation, $this->groupRepository, $this->csrfService);
+        $this->userController = Phake::partialMock(UserController::class, $this->viewService, $this->userRepository, $this->userValidation, $this->groupRepository, $this->csrfService, $this->loginService);
+        Phake::when($this->userController)->checkForPermission->thenReturn(true);
     }
 
     public function testGetListPage1()
     {
         $this->userController->getList(1);
 
+        Phake::verify($this->userController)->checkForPermission('Administrator');
         Phake::verify($this->userRepository)->getSortedList(10, 0);
         Phake::verify($this->userRepository)->getCount();
         Phake::verify($this->viewService)->renderView('users/list', [
@@ -168,7 +178,8 @@ class UserControllerTest extends TestCase
         Phake::when($this->csrfService)->getNewToken->thenReturn('1itfuefduyp9h');
         
         $this->userController->getNew();
-        
+
+        Phake::verify($this->userController)->checkForPermission('Administrator');
         Phake::verify($this->viewService)->renderView('users/form', Phake::capture($templateData));
         Phake::verify($this->csrfService)->getNewToken();
 
@@ -194,6 +205,7 @@ class UserControllerTest extends TestCase
             'token' => '123456',
         ]);
 
+        Phake::verify($this->userController)->checkForPermission('Administrator');
         /* @var $user UserEntity */
         Phake::verify($this->userValidation)->validate(Phake::capture($user));
         $this->assertEquals('mike.lively', $user->getUsername());
@@ -317,6 +329,7 @@ class UserControllerTest extends TestCase
 
         $this->userController->getDetail('mike.lively');
 
+        Phake::verify($this->userController)->checkForPermission('Administrator');
         Phake::verify($this->groupRepository)->getSortedList();
         Phake::verify($this->userRepository)->getByFriendlyName('mike.lively');
         Phake::verify($this->viewService)->renderView('users/form', [
@@ -363,6 +376,8 @@ class UserControllerTest extends TestCase
             'token' => '123456',
         ]);
 
+        Phake::verify($this->userController)->checkForPermission('Administrator');
+
         Phake::verify($this->csrfService)->validateToken('123456');
 
         Phake::verify($this->userRepository)->getByFriendlyName('mike.lively');
@@ -396,6 +411,7 @@ class UserControllerTest extends TestCase
             ],
         ]);
 
+        Phake::verify($this->userController)->checkForPermission('Administrator');
         Phake::verify($this->userRepository)->getListByFriendlyNames(['mike.lively', 'user2']);
         Phake::verify($this->viewService)->renderView('users/removeList', Phake::capture($templateData));
         
@@ -415,6 +431,7 @@ class UserControllerTest extends TestCase
             'originalUrl' => '/mytest/',
         ]);
 
+        Phake::verify($this->userController)->checkForPermission('Administrator');
         Phake::verify($this->userRepository)->deleteByFriendlyNames(['mike.lively', 'user2']);
         Phake::verify($this->viewService)->redirect('/mytest/', 303, 'Users successfully removed: mike.lively, user2');
     }
@@ -450,6 +467,8 @@ class UserControllerTest extends TestCase
             'groupIds' => [1, 2, 3],
             'operation' => 'add'
         ]);
+
+        Phake::verify($this->userController)->checkForPermission('Administrator');
 
         Phake::verify($this->userRepository)->getByFriendlyName('mike.lively');
         $this->assertEquals([1, 2, 3], $user->getGroupIds());

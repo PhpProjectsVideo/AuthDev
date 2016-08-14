@@ -270,4 +270,9 @@ class UserEntity
     {
         return array_keys($this->groupIds);
     }
+
+    public function passwordMatches(string $password) : bool
+    {
+        return password_verify($password, $this->getPasswordHash());
+    }
 }

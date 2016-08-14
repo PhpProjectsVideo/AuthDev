@@ -13,29 +13,47 @@ class UserManagementTest extends DatabaseSeleniumTestCase
      */
     protected function getDataSet()
     {
+        $hash =  password_hash('P@ssw0rd', PASSWORD_BCRYPT, ['cost' => 10 ]);
         return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet([
             'users' => [
-                [ 'username' => 'taken.user01', 'email' => 'taken1@digitalsandwich.com', 'name' => 'Existing User 1', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user02', 'email' => 'taken2@digitalsandwich.com', 'name' => 'Existing User 2', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user03', 'email' => 'taken3@digitalsandwich.com', 'name' => 'Existing User 3', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user04', 'email' => 'taken4@digitalsandwich.com', 'name' => 'Existing User 4', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user05', 'email' => 'taken5@digitalsandwich.com', 'name' => 'Existing User 5', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user06', 'email' => 'taken6@digitalsandwich.com', 'name' => 'Existing User 6', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user07', 'email' => 'taken7@digitalsandwich.com', 'name' => 'Existing User 7', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user08', 'email' => 'taken8@digitalsandwich.com', 'name' => 'Existing User 8', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user09', 'email' => 'taken9@digitalsandwich.com', 'name' => 'Existing User 9', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user10', 'email' => 'taken10@digitalsandwich.com', 'name' => 'Existing User 10', 'password' => 'badhash' ],
-                [ 'username' => 'taken.user11', 'email' => 'taken11@digitalsandwich.com', 'name' => 'Existing User 11', 'password' => 'badhash' ],
+                [ 'id' => 1, 'username' => 'taken.user01', 'email' => 'taken1@digitalsandwich.com', 'name' => 'Existing User 1', 'password' => $hash ],
+                [ 'id' => 2, 'username' => 'taken.user02', 'email' => 'taken2@digitalsandwich.com', 'name' => 'Existing User 2', 'password' => $hash ],
+                [ 'id' => 3, 'username' => 'taken.user03', 'email' => 'taken3@digitalsandwich.com', 'name' => 'Existing User 3', 'password' => $hash ],
+                [ 'id' => 4, 'username' => 'taken.user04', 'email' => 'taken4@digitalsandwich.com', 'name' => 'Existing User 4', 'password' => $hash ],
+                [ 'id' => 5, 'username' => 'taken.user05', 'email' => 'taken5@digitalsandwich.com', 'name' => 'Existing User 5', 'password' => $hash ],
+                [ 'id' => 6, 'username' => 'taken.user06', 'email' => 'taken6@digitalsandwich.com', 'name' => 'Existing User 6', 'password' => $hash ],
+                [ 'id' => 7, 'username' => 'taken.user07', 'email' => 'taken7@digitalsandwich.com', 'name' => 'Existing User 7', 'password' => $hash ],
+                [ 'id' => 8, 'username' => 'taken.user08', 'email' => 'taken8@digitalsandwich.com', 'name' => 'Existing User 8', 'password' => $hash ],
+                [ 'id' => 9, 'username' => 'taken.user09', 'email' => 'taken9@digitalsandwich.com', 'name' => 'Existing User 9', 'password' => $hash ],
+                [ 'id' => 10, 'username' => 'taken.user10', 'email' => 'taken10@digitalsandwich.com', 'name' => 'Existing User 10', 'password' => $hash ],
+                [ 'id' => 11, 'username' => 'taken.user11', 'email' => 'taken11@digitalsandwich.com', 'name' => 'Existing User 11', 'password' => $hash ],
             ],
             'groups' => [
-                [ 'name' => 'Group 1', ],
-                [ 'name' => 'Group 2', ],
-                [ 'name' => 'Group 3', ],
-                [ 'name' => 'Group 4', ],
-                [ 'name' => 'Group 5', ],
+                [ 'id' => 1, 'name' => 'Group 1', ],
+                [ 'id' => 2, 'name' => 'Group 2', ],
+                [ 'id' => 3, 'name' => 'Group 3', ],
+                [ 'id' => 4, 'name' => 'Group 4', ],
+                [ 'id' => 5, 'name' => 'Group 5', ],
             ],
-            'users_groups' => [ ],
+            'users_groups' => [ 
+                [ 'users_id' => 9, 'groups_id' => 1 ],
+            ],
+            'permissions' => [
+                [ 'id' => 1, 'name' => 'Administrator' ],
+            ],
+            'groups_permissions' => [
+                [ 'groups_id' => 1, 'permissions_id' => 1 ],
+            ],
         ]);
+    }
+
+    public function setUpPage()
+    {
+        parent::setUpPage();
+        $this->url('http://auth.dev/auth/login');
+        $this->byName('username')->value('taken.user09');
+        $this->byName('password')->value('P@ssw0rd');
+        $this->byName('login')->click();
     }
 
     public function testListingUsers()

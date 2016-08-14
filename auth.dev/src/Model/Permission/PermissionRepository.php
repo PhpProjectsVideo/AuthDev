@@ -8,6 +8,27 @@ use PhpProjects\AuthDev\Model\SimpleCrudRepository;
  */
 class PermissionRepository extends SimpleCrudRepository
 {
+    public function getByGroupIds(array $getGroupIds) : \Traversable
+    {
+        if (empty($getGroupIds))
+        {
+            return new \ArrayIterator(array());
+        }
+        
+        $paramList = rtrim(str_repeat('?,', count($getGroupIds)), ',');
+        $stm = $this->pdo->prepare("
+            SELECT p.id, p.name FROM permissions p 
+            JOIN groups_permissions pg ON pg.permissions_id = p.id 
+            WHERE pg.groups_id IN ({$paramList})
+        ");
+        $stm->execute($getGroupIds);
+        
+        foreach ($stm as $row)
+        {
+            yield $this->getEntityFromRow($row);
+        }
+    }
+
     /**
      * Returns a map of column names to entity values from the given $entity
      *

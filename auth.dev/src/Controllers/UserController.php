@@ -2,6 +2,7 @@
 
 namespace PhpProjects\AuthDev\Controllers;
 
+use PhpProjects\AuthDev\Authentication\LoginService;
 use PhpProjects\AuthDev\Model\Csrf\CsrfService;
 use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Group\GroupRepository;
@@ -27,16 +28,23 @@ class UserController extends SimpleCrudController
     private $groupRepository;
 
     /**
+     * @var LoginService
+     */
+    private $loginService;
+
+    /**
      * @param ViewService $viewService
      * @param UserRepository $userRepository
      * @param UserValidation $userValidation
      * @param GroupRepository $groupRepository
      * @param CsrfService $csrfService
+     * @param LoginService $loginService
      */
-    public function __construct(ViewService $viewService, UserRepository $userRepository, UserValidation $userValidation, GroupRepository $groupRepository, CsrfService $csrfService)
+    public function __construct(ViewService $viewService, UserRepository $userRepository, UserValidation $userValidation, GroupRepository $groupRepository, CsrfService $csrfService, LoginService $loginService)
     {
         $this->userValidation = $userValidation;
         $this->groupRepository = $groupRepository;
+        $this->loginService = $loginService;
         parent::__construct($viewService, $userRepository, $csrfService);
     }
 
@@ -47,7 +55,7 @@ class UserController extends SimpleCrudController
      */
     public static function create() : UserController
     {
-        return new self(ViewService::create(), UserRepository::create(), new UserValidation(), GroupRepository::create(), CsrfService::create());
+        return new self(ViewService::create(), UserRepository::create(), new UserValidation(), GroupRepository::create(), CsrfService::create(), LoginService::create());
     }
 
     /**
@@ -157,33 +165,118 @@ class UserController extends SimpleCrudController
      */
     public function postUpdateGroups(string $username, array $postData)
     {
-        if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+        if ($this->checkForPermission('Administrator'))
         {
-            $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your session has expired, please try updating groups again", 'danger');
+            if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+            {
+                $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your session has expired, please try updating groups again", 'danger');
+            }
+            else
+            {
+                $user = $this->crudRepository->getByFriendlyName($username);
+
+                if (empty($user))
+                {
+                    throw (new ContentNotFoundException("I could not locate the user {$username}."))
+                        ->setTitle('User Not Found')
+                        ->setRecommendedUrl('/users/')
+                        ->setRecommendedAction('View All Users');
+                }
+                if ($postData['operation'] == 'add')
+                {
+                    $user->addGroups($postData['groupIds'] ?? []);
+                }
+                elseif ($postData['operation'] == 'remove')
+                {
+                    $user->removeGroups($postData['groupIds'] ?? []);
+                }
+
+                $this->crudRepository->saveEntity($user);
+
+                $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your groups have been updated", 'success');
+            }
         }
-        else
+    }
+
+    /**
+     * A helper function to ensure that the current session has $permission.
+     *
+     * If they are not authenticated, the user will be redirected to the login page and false returned.
+     * 
+     * If they are authenticated but do not have access, they will be shown the nopermissions view and false returned.
+     * 
+     * If they have permission no action will be taken and true will be returned.
+     * @param string $permission
+     * @return bool
+     */
+    protected function checkForPermission(string $permission) : bool 
+    {
+        if (!$this->loginService->isSessionAuthenticated())
         {
-            $user = $this->crudRepository->getByFriendlyName($username);
+            $this->viewService->redirect('/auth/login?originalUrl=' . urlencode($_SERVER['REQUEST_URI'] ?? '/'));
+            return false;
+        }
+        elseif (!$this->loginService->sessionHasPermission($permission))
+        {
+            $this->viewService->renderView('auth/nopermissions');
+            return false;
+        }
+        return true;
+    }
 
-            if (empty($user))
-            {
-                throw (new ContentNotFoundException("I could not locate the user {$username}."))
-                    ->setTitle('User Not Found')
-                    ->setRecommendedUrl('/users/')
-                    ->setRecommendedAction('View All Users');
-            }
-            if ($postData['operation'] == 'add')
-            {
-                $user->addGroups($postData['groupIds'] ?? []);
-            }
-            elseif ($postData['operation'] == 'remove')
-            {
-                $user->removeGroups($postData['groupIds'] ?? []);
-            }
+    public function getList(int $currentPage = 1, string $query = '')
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::getList($currentPage, $query);
+        }
+    }
 
-            $this->crudRepository->saveEntity($user);
+    public function getNew()
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::getNew();
+        }
+    }
 
-            $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your groups have been updated", 'success');
+    public function getDetail(string $name)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::getDetail($name);
+        }
+    }
+
+    public function postNew(array $entityData)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::postNew($entityData);
+        }
+    }
+
+    public function postDetail(string $name, array $entityData)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::postDetail($name, $entityData);
+        }
+    }
+
+    public function getRemove(array $getData)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::getRemove($getData);
+        }
+    }
+
+    public function postRemove(array $postData)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::postRemove($postData);
         }
     }
 }
