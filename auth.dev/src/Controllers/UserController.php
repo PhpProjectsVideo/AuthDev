@@ -160,92 +160,38 @@ class UserController extends SimpleCrudController
      */
     public function postUpdateGroups(string $username, array $postData)
     {
-        if ($this->checkForPermission('Administrator'))
+        if (!$this->checkForPermission('Administrator'))
         {
-            if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+            return;
+        }
+        
+        if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+        {
+            $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your session has expired, please try updating groups again", 'danger');
+        }
+        else
+        {
+            $user = $this->crudRepository->getByFriendlyName($username);
+
+            if (empty($user))
             {
-                $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your session has expired, please try updating groups again", 'danger');
+                throw (new ContentNotFoundException("I could not locate the user {$username}."))
+                    ->setTitle('User Not Found')
+                    ->setRecommendedUrl('/users/')
+                    ->setRecommendedAction('View All Users');
             }
-            else
+            if ($postData['operation'] == 'add')
             {
-                $user = $this->crudRepository->getByFriendlyName($username);
-
-                if (empty($user))
-                {
-                    throw (new ContentNotFoundException("I could not locate the user {$username}."))
-                        ->setTitle('User Not Found')
-                        ->setRecommendedUrl('/users/')
-                        ->setRecommendedAction('View All Users');
-                }
-                if ($postData['operation'] == 'add')
-                {
-                    $user->addGroups($postData['groupIds'] ?? []);
-                }
-                elseif ($postData['operation'] == 'remove')
-                {
-                    $user->removeGroups($postData['groupIds'] ?? []);
-                }
-
-                $this->crudRepository->saveEntity($user);
-
-                $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your groups have been updated", 'success');
+                $user->addGroups($postData['groupIds'] ?? []);
             }
-        }
-    }
+            elseif ($postData['operation'] == 'remove')
+            {
+                $user->removeGroups($postData['groupIds'] ?? []);
+            }
 
-    public function getList(int $currentPage = 1, string $query = '')
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::getList($currentPage, $query);
-        }
-    }
+            $this->crudRepository->saveEntity($user);
 
-    public function getNew()
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::getNew();
-        }
-    }
-
-    public function getDetail(string $name)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::getDetail($name);
-        }
-    }
-
-    public function postNew(array $entityData)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::postNew($entityData);
-        }
-    }
-
-    public function postDetail(string $name, array $entityData)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::postDetail($name, $entityData);
-        }
-    }
-
-    public function getRemove(array $getData)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::getRemove($getData);
-        }
-    }
-
-    public function postRemove(array $postData)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::postRemove($postData);
+            $this->viewService->redirect('/users/detail/' . urlencode($username), 303, "Your groups have been updated", 'success');
         }
     }
 

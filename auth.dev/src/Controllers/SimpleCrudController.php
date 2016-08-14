@@ -108,6 +108,11 @@ abstract class SimpleCrudController
      */
     public function getList(int $currentPage = 1, string $query = '')
     {
+        if (!$this->checkForPermission('Administrator'))
+        {
+            return;
+        }
+        
         if (empty($query))
         {
             $entityList = $this->crudRepository->getSortedList(10, ($currentPage - 1) * 10);
@@ -138,6 +143,11 @@ abstract class SimpleCrudController
      */
     public function getNew()
     {
+        if (!$this->checkForPermission('Administrator'))
+        {
+            return;
+        }
+        
         $entity = $this->getNewEntity();
         $this->viewService->renderView($this->getTemplateFolder() . '/form', [
             'entity' => $entity,
@@ -153,6 +163,11 @@ abstract class SimpleCrudController
      */
     public function getDetail(string $name)
     {
+        if (!$this->checkForPermission('Administrator'))
+        {
+            return;
+        }
+        
         $entity = $this->crudRepository->getByFriendlyName($name);
 
         if (empty($entity))
@@ -182,6 +197,11 @@ abstract class SimpleCrudController
      */
     public function postNew(array $entityData)
     {
+        if (!$this->checkForPermission('Administrator'))
+        {
+            return;
+        }
+        
         $entity = $this->getEntityFromData($entityData);
 
         $this->saveEntity($entity, $entityData);
@@ -195,6 +215,11 @@ abstract class SimpleCrudController
      */
     public function postDetail(string $name, array $entityData)
     {
+        if (!$this->checkForPermission('Administrator'))
+        {
+            return;
+        }
+        
         $entity = $this->crudRepository->getByFriendlyName($name);
 
         if (empty($entity))
@@ -252,6 +277,11 @@ abstract class SimpleCrudController
      */
     public function getRemove(array $getData)
     {
+        if (!$this->checkForPermission('Administrator'))
+        {
+            return;
+        }
+        
         $entities = $this->crudRepository->getListByFriendlyNames($getData['entities'] ?? []);
         $this->viewService->renderView($this->getTemplateFolder() . '/removeList', [
             'entities' => $entities,
@@ -266,6 +296,11 @@ abstract class SimpleCrudController
      */
     public function postRemove(array $postData)
     {
+        if (!$this->checkForPermission('Administrator'))
+        {
+            return;
+        }
+        
         if (!$this->csrfService->validateToken($postData['token'] ?? ''))
         {
             $entityTitle = strtolower($this->getEntityTitle()) . 's';
@@ -300,6 +335,17 @@ abstract class SimpleCrudController
      * @return bool
      */
     protected function onSaveValidation(ValidationResults$validationResults, $entity, array $entityData) : bool 
+    {
+        return true;
+    }
+
+    /**
+     * A null implementation of checkForPermission to always approve permission checks.
+     * 
+     * @param string $permission
+     * @return bool
+     */
+    protected function checkForPermission(string $permission) : bool
     {
         return true;
     }

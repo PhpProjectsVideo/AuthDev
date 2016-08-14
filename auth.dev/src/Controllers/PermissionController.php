@@ -119,62 +119,6 @@ class PermissionController extends SimpleCrudController
         return $entity->getName();
     }
 
-    public function getList(int $currentPage = 1, string $query = '')
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::getList($currentPage, $query);
-        }
-    }
-
-    public function getNew()
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::getNew();
-        }
-    }
-
-    public function getDetail(string $name)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::getDetail($name);
-        }
-    }
-
-    public function postNew(array $entityData)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::postNew($entityData);
-        }
-    }
-
-    public function postDetail(string $name, array $entityData)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::postDetail($name, $entityData);
-        }
-    }
-
-    public function getRemove(array $getData)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::getRemove($getData);
-        }
-    }
-
-    public function postRemove(array $postData)
-    {
-        if ($this->checkForPermission('Administrator'))
-        {
-            parent::postRemove($postData);
-        }
-    }
-
     /**
      * @return ViewService
      */
