@@ -13,31 +13,50 @@ class GroupManagementTest extends DatabaseSeleniumTestCase
      */
     protected function getDataSet()
     {
+        $hash =  password_hash('P@ssw0rd', PASSWORD_BCRYPT, ['cost' => 10 ]);
         return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet([
+            'users' => [
+                [ 'id' => 1, 'username' => 'taken.user01', 'email' => 'taken1@digitalsandwich.com', 'name' => 'Existing User 1', 'password' => $hash ],
+
+            ],
             'groups' => [
-                [ 'name' => 'Group 1', ],
-                [ 'name' => 'Group 2', ],
-                [ 'name' => 'Group 3', ],
-                [ 'name' => 'Group 4', ],
-                [ 'name' => 'Group 5', ],
-                [ 'name' => 'Group 6', ],
-                [ 'name' => 'Group 7', ],
-                [ 'name' => 'Group 8', ],
-                [ 'name' => 'Group 9', ],
-                [ 'name' => 'Group 10', ],
-                [ 'name' => 'Group 11', ],
+               [ 'id' => 1, 'name' => 'Group 1', ],
+               [ 'id' => 2, 'name' => 'Group 2', ],
+               [ 'id' => 3, 'name' => 'Group 3', ],
+               [ 'id' => 4, 'name' => 'Group 4', ],
+               [ 'id' => 5, 'name' => 'Group 5', ],
+               [ 'id' => 6, 'name' => 'Group 6', ],
+               [ 'id' => 7, 'name' => 'Group 7', ],
+               [ 'id' => 8, 'name' => 'Group 8', ],
+               [ 'id' => 9, 'name' => 'Group 9', ],
+               [ 'id' => 10, 'name' => 'Group 10', ],
+               [ 'id' => 11, 'name' => 'Group 11', ],
             ],
             
             'permissions' => [
-                [ 'name' => 'Permission 1', ],
-                [ 'name' => 'Permission 2', ],
-                [ 'name' => 'Permission 3', ],
-                [ 'name' => 'Permission 4', ],
-                [ 'name' => 'Permission 5', ],
+                [ 'id' => 1, 'name' => 'Permission 1', ],
+                [ 'id' => 2, 'name' => 'Permission 2', ],
+                [ 'id' => 3, 'name' => 'Permission 3', ],
+                [ 'id' => 4, 'name' => 'Permission 4', ],
+                [ 'id' => 5, 'name' => 'Permission 5', ],
+                [ 'id' => 6, 'name' => 'Administrator' ],
             ],
-            
-            'groups_permissions' => [ ],
+            'users_groups' => [
+                [ 'users_id' => 1, 'groups_id' => 9 ],
+            ],
+            'groups_permissions' => [
+                [ 'groups_id' => 9, 'permissions_id' => 6 ],
+            ],
         ]);
+    }
+
+    public function setUpPage()
+    {
+        parent::setUpPage();
+        $this->url('http://auth.dev/auth/login');
+        $this->byName('username')->value('taken.user01');
+        $this->byName('password')->value('P@ssw0rd');
+        $this->byName('login')->click();
     }
 
     public function testListingGroups()

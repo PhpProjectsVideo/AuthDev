@@ -13,21 +13,46 @@ class PermissionManagementTest extends DatabaseSeleniumTestCase
      */
     protected function getDataSet()
     {
+        $hash =  password_hash('P@ssw0rd', PASSWORD_BCRYPT, ['cost' => 10 ]);
         return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet([
+            'users' => [
+                [ 'id' => 1, 'username' => 'taken.user01', 'email' => 'taken1@digitalsandwich.com', 'name' => 'Existing User 1', 'password' => $hash ],
+
+            ],
+            'groups' => [
+                [ 'id' => 1, 'name' => 'Group 1', ],
+
+            ],
             'permissions' => [
-                [ 'name' => 'Permission 1', ],
-                [ 'name' => 'Permission 2', ],
-                [ 'name' => 'Permission 3', ],
-                [ 'name' => 'Permission 4', ],
-                [ 'name' => 'Permission 5', ],
-                [ 'name' => 'Permission 6', ],
-                [ 'name' => 'Permission 7', ],
-                [ 'name' => 'Permission 8', ],
-                [ 'name' => 'Permission 9', ],
-                [ 'name' => 'Permission 10', ],
-                [ 'name' => 'Permission 11', ],
+                [ 'id' => 1, 'name' => 'Permission 1', ],
+                [ 'id' => 2, 'name' => 'Permission 2', ],
+                [ 'id' => 3, 'name' => 'Permission 3', ],
+                [ 'id' => 4, 'name' => 'Permission 4', ],
+                [ 'id' => 5, 'name' => 'Permission 5', ],
+                [ 'id' => 6, 'name' => 'Permission 6', ],
+                [ 'id' => 7, 'name' => 'Permission 7', ],
+                [ 'id' => 8, 'name' => 'Permission 8', ],
+                [ 'id' => 9, 'name' => 'Permission 9', ],
+                [ 'id' => 10, 'name' => 'Permission 10', ],
+                [ 'id' => 11, 'name' => 'Permission 11', ],
+                [ 'id' => 12, 'name' => 'Administrator', ],
+            ],
+            'users_groups' => [
+                [ 'users_id' => 1, 'groups_id' => 1 ],
+            ],
+            'groups_permissions' => [
+                [ 'groups_id' => 1, 'permissions_id' => 12 ],
             ],
         ]);
+    }
+
+    public function setUpPage()
+    {
+        parent::setUpPage();
+        $this->url('http://auth.dev/auth/login');
+        $this->byName('username')->value('taken.user01');
+        $this->byName('password')->value('P@ssw0rd');
+        $this->byName('login')->click();
     }
 
     public function testListingPermissions()

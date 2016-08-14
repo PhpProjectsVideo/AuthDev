@@ -15,6 +15,8 @@ use PhpProjects\AuthDev\Views\ViewService;
  */
 class GroupController extends SimpleCrudController
 {
+    use PermissionableControllerTrait;
+    
     /**
      * @var GroupValidation
      */
@@ -144,34 +146,102 @@ class GroupController extends SimpleCrudController
      */
     public function postUpdatePermissions(string $name, array $postData)
     {
-        if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+        if ($this->checkForPermission('Administrator'))
         {
-            
-            $this->viewService->redirect('/groups/detail/' . urlencode($name), 303, "Your session has expired, please try updating permissions again", 'danger');
+            if (!$this->csrfService->validateToken($postData['token'] ?? ''))
+            {
+
+                $this->viewService->redirect('/groups/detail/' . urlencode($name), 303, "Your session has expired, please try updating permissions again", 'danger');
+            }
+            else
+            {
+                $group = $this->crudRepository->getByFriendlyName($name);
+
+                if (empty($group))
+                {
+                    throw (new ContentNotFoundException("I could not locate the group {$name}."))
+                        ->setTitle('Group Not Found')
+                        ->setRecommendedUrl('/groups/')
+                        ->setRecommendedAction('View All Groups');
+                }
+                if ($postData['operation'] == 'add')
+                {
+                    $group->addPermissions($postData['permissionIds'] ?? []);
+                }
+                elseif ($postData['operation'] == 'remove')
+                {
+                    $group->removePermissions($postData['permissionIds'] ?? []);
+                }
+
+                $this->crudRepository->saveEntity($group);
+
+                $this->viewService->redirect('/groups/detail/' . urlencode($name), 303, "Your permissions have been updated", 'success');
+            }
         }
-        else
+    }
+
+    public function getList(int $currentPage = 1, string $query = '')
+    {
+        if ($this->checkForPermission('Administrator'))
         {
-            $group = $this->crudRepository->getByFriendlyName($name);
-
-            if (empty($group))
-            {
-                throw (new ContentNotFoundException("I could not locate the group {$name}."))
-                    ->setTitle('Group Not Found')
-                    ->setRecommendedUrl('/groups/')
-                    ->setRecommendedAction('View All Groups');
-            }
-            if ($postData['operation'] == 'add')
-            {
-                $group->addPermissions($postData['permissionIds'] ?? []);
-            }
-            elseif ($postData['operation'] == 'remove')
-            {
-                $group->removePermissions($postData['permissionIds'] ?? []);
-            }
-
-            $this->crudRepository->saveEntity($group);
-
-            $this->viewService->redirect('/groups/detail/' . urlencode($name), 303, "Your permissions have been updated", 'success');
+            parent::getList($currentPage, $query);
         }
+    }
+
+    public function getNew()
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::getNew();
+        }
+    }
+
+    public function getDetail(string $name)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::getDetail($name);
+        }
+    }
+
+    public function postNew(array $entityData)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::postNew($entityData);
+        }
+    }
+
+    public function postDetail(string $name, array $entityData)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::postDetail($name, $entityData);
+        }
+    }
+
+    public function getRemove(array $getData)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::getRemove($getData);
+        }
+    }
+
+    public function postRemove(array $postData)
+    {
+        if ($this->checkForPermission('Administrator'))
+        {
+            parent::postRemove($postData);
+        }
+    }
+
+    /**
+     * @return ViewService
+     */
+    protected function getViewService() : ViewService
+    {
+        return $this->viewService;
+        // TODO: Implement getViewService() method.
     }
 }

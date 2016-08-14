@@ -66,7 +66,8 @@ class PermissionControllerTest extends TestCase
         $this->csrfService = Phake::mock(CsrfService::class);
         Phake::when($this->csrfService)->validateToken->thenReturn(true);
 
-        $this->permissionController = new PermissionController($this->viewService, $this->permissionRepository, $this->permissionValidation, $this->csrfService);
+        $this->permissionController =Phake::partialMock(PermissionController::class, $this->viewService, $this->permissionRepository, $this->permissionValidation, $this->csrfService);
+        Phake::when($this->permissionController)->checkForPermission->thenReturn(true);
     }
 
     public function testGetListPage1()

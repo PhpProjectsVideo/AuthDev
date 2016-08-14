@@ -17,6 +17,8 @@ use PhpProjects\AuthDev\Views\ViewService;
  */
 class UserController extends SimpleCrudController
 {
+    use PermissionableControllerTrait;
+    
     /**
      * @var UserValidation
      */
@@ -28,23 +30,16 @@ class UserController extends SimpleCrudController
     private $groupRepository;
 
     /**
-     * @var LoginService
-     */
-    private $loginService;
-
-    /**
      * @param ViewService $viewService
      * @param UserRepository $userRepository
      * @param UserValidation $userValidation
      * @param GroupRepository $groupRepository
      * @param CsrfService $csrfService
-     * @param LoginService $loginService
      */
-    public function __construct(ViewService $viewService, UserRepository $userRepository, UserValidation $userValidation, GroupRepository $groupRepository, CsrfService $csrfService, LoginService $loginService)
+    public function __construct(ViewService $viewService, UserRepository $userRepository, UserValidation $userValidation, GroupRepository $groupRepository, CsrfService $csrfService)
     {
         $this->userValidation = $userValidation;
         $this->groupRepository = $groupRepository;
-        $this->loginService = $loginService;
         parent::__construct($viewService, $userRepository, $csrfService);
     }
 
@@ -198,32 +193,6 @@ class UserController extends SimpleCrudController
         }
     }
 
-    /**
-     * A helper function to ensure that the current session has $permission.
-     *
-     * If they are not authenticated, the user will be redirected to the login page and false returned.
-     * 
-     * If they are authenticated but do not have access, they will be shown the nopermissions view and false returned.
-     * 
-     * If they have permission no action will be taken and true will be returned.
-     * @param string $permission
-     * @return bool
-     */
-    protected function checkForPermission(string $permission) : bool 
-    {
-        if (!$this->loginService->isSessionAuthenticated())
-        {
-            $this->viewService->redirect('/auth/login?originalUrl=' . urlencode($_SERVER['REQUEST_URI'] ?? '/'));
-            return false;
-        }
-        elseif (!$this->loginService->sessionHasPermission($permission))
-        {
-            $this->viewService->renderView('auth/nopermissions');
-            return false;
-        }
-        return true;
-    }
-
     public function getList(int $currentPage = 1, string $query = '')
     {
         if ($this->checkForPermission('Administrator'))
@@ -278,5 +247,13 @@ class UserController extends SimpleCrudController
         {
             parent::postRemove($postData);
         }
+    }
+
+    /**
+     * @return ViewService
+     */
+    protected function getViewService() : ViewService
+    {
+        return $this->viewService;
     }
 }

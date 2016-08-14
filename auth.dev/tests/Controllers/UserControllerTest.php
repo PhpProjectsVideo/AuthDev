@@ -57,11 +57,6 @@ class UserControllerTest extends TestCase
      */
     private $csrfService;
 
-    /**
-     * @var LoginService
-     */
-    private $loginService;
-
     protected function setUp()
     {
         $this->userList = new \ArrayIterator([
@@ -93,9 +88,7 @@ class UserControllerTest extends TestCase
         $this->csrfService = Phake::mock(CsrfService::class);
         Phake::when($this->csrfService)->validateToken->thenReturn(true);
         
-        $this->loginService = Phake::mock(LoginService::class);
-
-        $this->userController = Phake::partialMock(UserController::class, $this->viewService, $this->userRepository, $this->userValidation, $this->groupRepository, $this->csrfService, $this->loginService);
+        $this->userController = Phake::partialMock(UserController::class, $this->viewService, $this->userRepository, $this->userValidation, $this->groupRepository, $this->csrfService);
         Phake::when($this->userController)->checkForPermission->thenReturn(true);
     }
 

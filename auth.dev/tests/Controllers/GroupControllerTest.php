@@ -85,7 +85,8 @@ class GroupControllerTest extends TestCase
         $this->csrfService = Phake::mock(CsrfService::class);
         Phake::when($this->csrfService)->validateToken->thenReturn(true);
 
-        $this->groupController = new GroupController($this->viewService, $this->groupRepository, $this->groupValidation, $this->permissionRepository, $this->csrfService);
+        $this->groupController = Phake::partialMock(GroupController::class, $this->viewService, $this->groupRepository, $this->groupValidation, $this->permissionRepository, $this->csrfService);
+        Phake::when($this->groupController)->checkForPermission->thenReturn(true);
     }
 
     public function testGetListPage1()
