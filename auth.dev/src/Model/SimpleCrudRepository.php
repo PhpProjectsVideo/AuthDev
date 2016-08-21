@@ -1,6 +1,7 @@
 <?php
 
 namespace PhpProjects\AuthDev\Model;
+use PhpProjects\AuthDev\Controllers\SimpleCrudController;
 use PhpProjects\AuthDev\Database\DatabaseService;
 
 /**
@@ -88,6 +89,12 @@ abstract class SimpleCrudRepository
      * @return string
      */
     abstract protected function getFriendlyLookupColumn() : string;
+
+    /**
+     * The name of the column that holds the id.
+     * @return string
+     */
+    abstract protected function getIdColumn() : string;
 
     /**
      * A helper method to make building the column list in sql easier.
@@ -200,6 +207,31 @@ abstract class SimpleCrudRepository
         $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} = ?";
         $stm = $this->pdo->prepare($sql);
         $stm->execute([ $name ]);
+
+        $row = $stm->fetch();
+        if (empty($row))
+        {
+            return null;
+        }
+        else
+        {
+            $entity = $this->getEntityFromRow($row);
+            $this->onSingleEntityLoad($entity);
+            return $entity;
+        }
+    }
+
+    /**
+     * Returns the entity specified by id $id or null if the entity does not exist.
+     *
+     * @param mixed $id
+     * @return mixed
+     */
+    public function getById($id)
+    {
+        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getIdColumn()} = ?";
+        $stm = $this->pdo->prepare($sql);
+        $stm->execute([ $id ]);
 
         $row = $stm->fetch();
         if (empty($row))

@@ -262,6 +262,17 @@ class UserEntity
     }
 
     /**
+     * Resets the group list
+     *
+     * @param array $groupIds
+     */
+    public function setGroups(array $groupIds)
+    {
+        $this->groupIds = [];
+        $this->addGroups($groupIds);
+    }
+
+    /**
      * Returns an array of group ids
      * 
      * @return array

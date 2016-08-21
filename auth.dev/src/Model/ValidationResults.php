@@ -53,4 +53,13 @@ class ValidationResults
     {
         $this->validationMessages[$field][] = $message;
     }
+
+    /**
+     * Returns all error messages as an array.
+     * @return array
+     */
+    public function getAllErrorMessages() : array
+    {
+        return array_merge(...array_values($this->validationMessages));
+    }
 }

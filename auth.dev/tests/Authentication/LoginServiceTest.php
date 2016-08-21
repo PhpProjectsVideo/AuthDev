@@ -128,22 +128,29 @@ class LoginServiceTest extends TestCase
         Phake::verify($this->permissionRepository)->getByGroupIds([1, 2, 3]);
         $this->assertTrue($hasPermission);
     }
-    
-    public function testSessionHasPermissionBadUser()
+
+    public function testUserHasPermission()
+    {
+        $hasPermission = $this->loginService->userHasPermission('test', 'Permission1');
+
+        Phake::verify($this->userRepository)->getByFriendlyName('test');
+        Phake::verify($this->permissionRepository)->getByGroupIds([1, 2, 3]);
+        $this->assertTrue($hasPermission);
+    }
+
+    public function testUserHasPermissionBadUser()
     {
         Phake::when($this->userRepository)->getByFriendlyName->thenReturn(null);
-        $this->session['LoginService']['username'] = 'test';
 
-        $hasPermission = $this->loginService->sessionHasPermission('Permission1');
+        $hasPermission = $this->loginService->userHasPermission('test', 'Permission1');
         $this->assertFalse($hasPermission);
     }
-    
-    public function testSessionHasPermissionBadPermission()
+
+    public function testUserHasPermissionBadPermission()
     {
-        $this->session['LoginService']['username'] = 'test';
-
-        $hasPermission = $this->loginService->sessionHasPermission('Permission4');
+        $hasPermission = $this->loginService->userHasPermission('test', 'Permission4');
 
         $this->assertFalse($hasPermission);
     }
+
 }

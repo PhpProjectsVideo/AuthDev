@@ -138,4 +138,13 @@ class UserRepository extends SimpleCrudRepository
     {
         return 'username';
     }
+
+    /**
+     * The name of the column that holds the id.
+     * @return string
+     */
+    protected function getIdColumn() : string
+    {
+        return 'id';
+    }
 }

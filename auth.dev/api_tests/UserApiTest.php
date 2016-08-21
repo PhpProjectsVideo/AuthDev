@@ -430,7 +430,7 @@ class UserApiTest extends TestCase
                 mkdir($artifactDir, 0777, true);
             }
 
-            $contents = '';
+            $contents = 'HTTP/' . $this->result->getProtocolVersion() . ' ' . $this->result->getStatusCode() . "\n";
 
             foreach ($this->result->getHeaders() as $name => $values)
             {

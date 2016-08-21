@@ -133,4 +133,13 @@ class GroupRepository extends SimpleCrudRepository
     {
         return 'name';
     }
+
+    /**
+     * The name of the column that holds the id.
+     * @return string
+     */
+    protected function getIdColumn() : string
+    {
+        return 'id';
+    }
 }

@@ -109,13 +109,25 @@ class LoginService
      */
     public function sessionHasPermission(string $permission) : bool 
     {
+        return $this->userHasPermission($this->session['LoginService']['username'], $permission);
+    }
+
+    /**
+     * returns true if the user has the requested permission, false otherwise.
+     * 
+     * @param string $user
+     * @param string $permission
+     * @return bool
+     */
+    public function userHasPermission(string $user, string $permission)
+    {
         /* @var $user UserEntity */
-        $user = $this->userRepository->getByFriendlyName($this->session['LoginService']['username']);
-        
+        $user = $this->userRepository->getByFriendlyName($user);
+
         if (!empty($user))
         {
             $permissions = $this->permissionRepository->getByGroupIds($user->getGroupIds());
-            
+
             /* @var PermissionEntity $p */
             foreach ($permissions as $p)
             {
@@ -125,7 +137,7 @@ class LoginService
                 }
             }
         }
-        
+
         return false;
     }
 }

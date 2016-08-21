@@ -349,4 +349,31 @@ abstract class SimpleCrudController
     {
         return true;
     }
+
+    /**
+     * Returns an array of standard routes for crud repositories
+     *
+     * @param SimpleCrudController $controller
+     * @return array
+     */
+    public static function generateRoutes(SimpleCrudController $controller) : array
+    {
+        return [
+            '^/$' => [
+                'get' => function () use ($controller) { $controller->getList($_GET['page'] ?? 1, $_GET['q'] ?? ''); }
+            ],
+            '^/new$' => [
+                'get' => function () use ($controller) { $controller->getNew(); },
+                'post' => function () use ($controller) { $controller->postNew($_POST); },
+            ],
+            '^/detail/([^/]+)$' => [
+                'get' => function ($matches) use ($controller) { $controller->getDetail(urldecode($matches[1] ?? '')); },
+                'post' => function ($matches) use ($controller) { $controller->postDetail(urldecode($matches[1] ?? ''), $_POST); },
+            ],
+            '^/remove$' => [
+                'get' => function () use ($controller) { $controller->getRemove($_GET); },
+                'post' => function () use ($controller) { $controller->postRemove($_POST); },
+            ],
+        ];
+    }
 }
