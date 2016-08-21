@@ -6,7 +6,8 @@
         "phpunit/phpunit": "^5.4",
         "phake/phake": "^2.3",
         "phpunit/phpunit-selenium": "^3.0",
-        "phpunit/dbunit": "^2.0"
+        "phpunit/dbunit": "^2.0",
+        "guzzlehttp/guzzle": "^6.2"
     },
     "autoload": {
         "psr-4": { "PhpProjects\\AuthDev\\": [ "src/", "tests/" ]}
