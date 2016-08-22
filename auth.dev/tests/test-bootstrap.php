@@ -2,12 +2,16 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
+$pdo = new PDO('mysql:host=localhost', 'auth', 'auth123');
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-/**
- * Check to make sure our test db exists, if it does not, create it and execute our sql against it.
- */
-if (!file_exists(__DIR__ . '/../data/test-auth.sqlite'))
-{
-    exec('sqlite3 ' . __DIR__ . '/../data/' . TEST_DATABASE_FILE . ' < ' . __DIR__ . '/../schema/schema.sql');
-}
+$pdo->exec("DROP DATABASE IF EXISTS auth_test");
+$pdo->exec("CREATE DATABASE auth_test");
+$pdo->exec("USE auth_test");
 
+$contents = file_get_contents(__DIR__ . '/../schema/schema.sql');
+
+$pdo->exec($contents);
+
+
+\PhpProjects\AuthDev\DatabaseTestCaseTrait::setPdo($pdo);

@@ -17,9 +17,10 @@ if (array_key_exists('iamwebdriver', $_GET) && $_SERVER['HTTP_HOST'] == 'auth.de
     header('Location: /');
     exit;
 }
-$dbName = isset($_COOKIE['iamwebdriver']) ? 'test-auth.sqlite' : 'auth.sqlite';
-define('CONFIG_DB_PATH', __DIR__ . "/../data/{$dbName}");
+$dbName = isset($_COOKIE['iamwebdriver']) ? 'auth_test' : 'auth';
 
 DatabaseService::setDefaultPdoParameters([
-    'sqlite:' . CONFIG_DB_PATH
+    "mysql:host=localhost;dbname={$dbName}",
+    "auth",
+    "auth123",
 ]);

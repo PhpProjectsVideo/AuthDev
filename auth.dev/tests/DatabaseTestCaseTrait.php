@@ -43,12 +43,13 @@ trait DatabaseTestCaseTrait
     /**
      * @return \PDO
      */
-    protected function getPdo()
+    protected function getPdo() : \PDO
     {
-        if (empty(self::$pdo))
-        {
-            self::$pdo = new \PDO('sqlite:' . __DIR__ . '/../data/' . TEST_DATABASE_FILE);
-        }
         return self::$pdo;
+    }
+
+    public static function setPdo(\PDO $pdo)
+    {
+        DatabaseTestCaseTrait::$pdo = $pdo;
     }
 }

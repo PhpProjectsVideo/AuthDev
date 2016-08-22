@@ -257,27 +257,31 @@ abstract class SimpleCrudRepository
         if (empty($entity->getId()))
         {
             $stmPlaceholders = [];
+            $sqlParameters = [];
+            $row = $this->getRowFromEntity($entity);
             foreach ($this->getColumnList() as $column)
             {
                 $stmPlaceholders[] = ':' . $column;
+                $sqlParameters[$column] = $row[$column] ?? null;
             }
             $stmPlaceholders = implode(',', $stmPlaceholders);
             $sql = "INSERT INTO {$this->getTable()} ({$this->getSqlColumnList()}) VALUES ({$stmPlaceholders})";
             $stm = $this->pdo->prepare($sql);
-            $sqlParameters = $this->getRowFromEntity($entity);
         }
         else
         {
             $stmPlaceholders = [];
+            $sqlParameters = [];
+            $row = $this->getRowFromEntity($entity);
             foreach ($this->getColumnList() as $column)
             {
                 $stmPlaceholders[] = $column . ' = :' . $column;
+                $sqlParameters[$column] = $row[$column] ?? null;
             }
             $stmPlaceholders = implode(',', $stmPlaceholders);
+            $sqlParameters['id'] = $this->getEntityId($entity);
             $sql = "UPDATE {$this->getTable()} SET {$stmPlaceholders} WHERE id = :id";
             $stm = $this->pdo->prepare($sql);
-            $sqlParameters = $this->getRowFromEntity($entity);
-            $sqlParameters['id'] = $this->getEntityId($entity);
         }
 
         try
@@ -291,7 +295,7 @@ abstract class SimpleCrudRepository
         }
         catch (\PDOException $e)
         {
-            if (preg_match("/UNIQUE constraint failed: {$this->getTable()}\\.([^ ]+)/", $e->getMessage(), $matches))
+            if (preg_match("/Duplicate entry '[^']+' for key '{$this->getTable()}_([^ ]+)_uindex/", $e->getMessage(), $matches))
             {
                 throw new DuplicateEntityException($matches[1], $e);
             }
