@@ -1,6 +1,7 @@
 <?php
 
 use PhpProjects\AuthDev\Database\DatabaseService;
+use PhpProjects\AuthDev\Database\DatabaseSessionHandler;
 
 require __DIR__ . "/../vendor/autoload.php";
 
@@ -24,3 +25,7 @@ DatabaseService::setDefaultPdoParameters([
     "auth",
     "auth123",
 ]);
+
+//Setup our session handler
+$sessionHandler = new DatabaseSessionHandler(DatabaseService::getInstance()->getPdo());
+session_set_save_handler($sessionHandler);

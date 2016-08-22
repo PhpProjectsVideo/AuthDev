@@ -37,6 +37,14 @@ CREATE TABLE groups_permissions
 );
 CREATE UNIQUE INDEX groups_permissions_groupid_permissionid_uindex ON groups_permissions (groups_id, permissions_id);
 
+CREATE TABLE session
+(
+    session_id VARBINARY(128) PRIMARY KEY,
+    data BLOB,
+    expiration INTEGER UNSIGNED NOT NULL,
+    INDEX session_expiration_index(expiration)
+);
+
 INSERT INTO users(id, username, password, email, name) VALUES (1, 'admin', '$2y$10$p.dgv9uMzcpanIeyTPb5B.Na9PMk0fia7s09PkzhrQLbY3UVCiM76', 'test@test.com', 'Test Account');
 INSERT INTO groups(id, name) VALUES (1, 'Administrators');
 INSERT INTO permissions(id, name) VALUES (1, 'Administrator');
