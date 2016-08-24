@@ -3,6 +3,7 @@
 namespace PhpProjects\AuthDev\Model;
 use PhpProjects\AuthDev\Controllers\SimpleCrudController;
 use PhpProjects\AuthDev\Database\DatabaseService;
+use PhpProjects\AuthDev\Memcache\MemcacheService;
 
 /**
  * Base class for repositories that offer simple crud functionality
@@ -16,11 +17,18 @@ abstract class SimpleCrudRepository
     protected $pdo;
 
     /**
-     * @param \PDO $pdo
+     * @var MemcacheService
      */
-    public function __construct(\PDO $pdo)
+    protected $memcacheService;
+
+    /**
+     * @param \PDO $pdo
+     * @param MemcacheService $memcacheService
+     */
+    public function __construct(\PDO $pdo, MemcacheService $memcacheService)
     {
         $this->pdo = $pdo;
+        $this->memcacheService = $memcacheService;
     }
 
     /**
@@ -28,7 +36,7 @@ abstract class SimpleCrudRepository
      */
     public static function create() : SimpleCrudRepository
     {
-        return new static(DatabaseService::getInstance()->getPdo());
+        return new static(DatabaseService::getInstance()->getPdo(), MemcacheService::getInstance());
     }
 
     /**
@@ -115,20 +123,29 @@ abstract class SimpleCrudRepository
      */
     public function getSortedList(int $limit = 0, int $offset = 0) : \Traversable
     {
-        if (!empty($limit))
-        {
-            $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} ORDER BY {$this->getDefaultSortColumn()} LIMIT {$offset}, {$limit}";
-        }
-        else
-        {
-            $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} ORDER BY {$this->getDefaultSortColumn()}";
-        }
-        $stm = $this->pdo->query($sql);
+        $entities = $this->memcacheService->nsGet($this->getTable(), "sortedList:{$limit}:{$offset}");
 
-        foreach ($stm as $rowData)
+        if ($entities === false)
         {
-            yield $this->getEntityFromRow($rowData);
+            if (!empty($limit))
+            {
+                $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} ORDER BY {$this->getDefaultSortColumn()} LIMIT {$offset}, {$limit}";
+            }
+            else
+            {
+                $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} ORDER BY {$this->getDefaultSortColumn()}";
+            }
+            $stm = $this->pdo->query($sql);
+
+            $entities = [];
+            foreach ($stm as $rowData)
+            {
+                $entities[] = $this->getEntityFromRow($rowData);
+            }
+            $this->memcacheService->nsSet($this->getTable(), "sortedList:{$limit}:{$offset}", $entities, 300);
         }
+        
+        return new \ArrayIterator($entities);
     }
 
     public function getListByFriendlyNames(array $names) : \Traversable
@@ -155,11 +172,21 @@ abstract class SimpleCrudRepository
      */
     public function getCount() : int
     {
-        $sql = "SELECT COUNT(*) FROM {$this->getTable()}";
+        $count = $this->memcacheService->nsGet($this->getTable(), "count");
 
-        $stm = $this->pdo->query($sql);
+        if ($count === false)
+        {
 
-        return $stm->fetchColumn();
+            $sql = "SELECT COUNT(*) FROM {$this->getTable()}";
+
+            $stm = $this->pdo->query($sql);
+
+            $count = $stm->fetchColumn();
+
+            $this->memcacheService->nsSet($this->getTable(), "count", $count, 300);
+        }
+
+        return $count;
     }
 
     /**
@@ -172,14 +199,24 @@ abstract class SimpleCrudRepository
      */
     public function getListMatchingFriendlyName(string $query, int $limit, int $offset = 0) : \Traversable
     {
-        $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} LIKE ? ORDER BY {$this->getDefaultSortColumn()} LIMIT {$offset}, {$limit}";
-        $stm = $this->pdo->prepare($sql);
-        $stm->execute([ $query . '%' ]);
+        $entities = $this->memcacheService->nsGet($this->getTable(), "queryList:{$query}:{$limit}:{$offset}");
 
-        foreach ($stm as $rowData)
+        if ($entities === false)
         {
-            yield $this->getEntityFromRow($rowData);
+            $sql = "SELECT {$this->getSqlColumnList()} FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} LIKE ? ORDER BY {$this->getDefaultSortColumn()} LIMIT {$offset}, {$limit}";
+            $stm = $this->pdo->prepare($sql);
+            $stm->execute([ $query . '%' ]);
+
+            $entities = [];
+            foreach ($stm as $rowData)
+            {
+                $entities[] = $this->getEntityFromRow($rowData);
+            }
+
+            $this->memcacheService->nsSet($this->getTable(), "queryList:{$query}:{$limit}:{$offset}", $entities, 300);
         }
+
+        return new \ArrayIterator($entities);
     }
 
     /**
@@ -190,10 +227,18 @@ abstract class SimpleCrudRepository
      */
     public function getCountMatchingFriendlyName(string $query) : int
     {
-        $sql = "SELECT COUNT(*) FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} LIKE ?";
-        $stm = $this->pdo->prepare($sql);
-        $stm->execute([ $query . '%' ]);
-        return $stm->fetchColumn();
+        $count = $this->memcacheService->nsGet($this->getTable(), "queryCount:{$query}");
+
+        if ($count === false)
+        {
+            $sql = "SELECT COUNT(*) FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} LIKE ?";
+            $stm = $this->pdo->prepare($sql);
+            $stm->execute([ $query . '%' ]);
+            $count = $stm->fetchColumn();
+            $this->memcacheService->nsSet($this->getTable(), "queryCount:{$query}", $count, 300);
+        }
+
+        return $count;
     }
 
     /**
@@ -204,21 +249,32 @@ abstract class SimpleCrudRepository
      */
     public function getByFriendlyName(string $name)
     {
-        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} = ?";
-        $stm = $this->pdo->prepare($sql);
-        $stm->execute([ $name ]);
+        $entity = $this->memcacheService->nsGet($this->getTable(), "byName:{$name}");
 
-        $row = $stm->fetch();
-        if (empty($row))
+        if ($entity === false)
         {
-            return null;
+            $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} = ?";
+            $stm = $this->pdo->prepare($sql);
+            $stm->execute([ $name ]);
+
+            $row = $stm->fetch();
+            if (empty($row))
+            {
+                $entity = null;
+            }
+            else
+            {
+                $entity = $this->getEntityFromRow($row);
+            }
+            $this->memcacheService->nsSet($this->getTable(), "byName:{$name}", $entity, 300);
         }
-        else
+
+        if (!empty($entity))
         {
-            $entity = $this->getEntityFromRow($row);
             $this->onSingleEntityLoad($entity);
-            return $entity;
         }
+
+        return $entity;
     }
 
     /**
@@ -229,21 +285,32 @@ abstract class SimpleCrudRepository
      */
     public function getById($id)
     {
-        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getIdColumn()} = ?";
-        $stm = $this->pdo->prepare($sql);
-        $stm->execute([ $id ]);
+        $entity = $this->memcacheService->nsGet($this->getTable(), "byId:{$id}");
 
-        $row = $stm->fetch();
-        if (empty($row))
+        if ($entity === false)
         {
-            return null;
+            $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getIdColumn()} = ?";
+            $stm = $this->pdo->prepare($sql);
+            $stm->execute([ $id ]);
+
+            $row = $stm->fetch();
+            if (empty($row))
+            {
+                $entity = null;
+            }
+            else
+            {
+                $entity = $this->getEntityFromRow($row);
+            }
+            $this->memcacheService->nsSet($this->getTable(), "byId:{$id}", $entity, 300);
         }
-        else
+
+        if (!empty($entity))
         {
-            $entity = $this->getEntityFromRow($row);
             $this->onSingleEntityLoad($entity);
-            return $entity;
         }
+
+        return $entity;
     }
 
     /**
@@ -287,6 +354,7 @@ abstract class SimpleCrudRepository
         try
         {
             $stm->execute($sqlParameters);
+            $this->memcacheService->nsFlush($this->getTable());
             if (empty($this->getEntityId($entity)))
             {
                 $this->setEntityId($entity, $this->pdo->lastInsertId());
@@ -323,6 +391,7 @@ abstract class SimpleCrudRepository
         $sql = "DELETE FROM {$this->getTable()} WHERE {$this->getFriendlyLookupColumn()} IN ($parms)";
         $stm = $this->pdo->prepare($sql);
         $stm->execute($names);
+        $this->memcacheService->nsFlush($this->getTable());
     }
 
     /**

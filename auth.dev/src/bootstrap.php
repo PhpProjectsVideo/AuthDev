@@ -1,7 +1,7 @@
 <?php
 
 use PhpProjects\AuthDev\Database\DatabaseService;
-use PhpProjects\AuthDev\Database\DatabaseSessionHandler;
+use PhpProjects\AuthDev\Memcache\MemcacheService;
 
 require __DIR__ . "/../vendor/autoload.php";
 
@@ -26,6 +26,11 @@ DatabaseService::setDefaultPdoParameters([
     "auth123",
 ]);
 
+MemcacheService::setServers([
+    ['host' => 'localhost', 'port' => '11211']
+]);
+MemcacheService::setNsPrefix($dbName);
+
 //Setup our session handler
-$sessionHandler = new DatabaseSessionHandler(DatabaseService::getInstance()->getPdo());
-session_set_save_handler($sessionHandler);
+ini_set('session.save_handler', 'memcache');
+ini_set('session.save_path', 'tcp://localhost:11211');

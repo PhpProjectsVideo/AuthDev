@@ -4,6 +4,7 @@ namespace PhpProjects\AuthDev;
 
 
 use GuzzleHttp\Psr7\Response;
+use PhpProjects\AuthDev\Memcache\MemcacheService;
 use PHPUnit\Framework\TestCase;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
 
@@ -72,6 +73,7 @@ class UserApiTest extends TestCase
     {
         $this->hash =  password_hash('P@ssw0rd', PASSWORD_BCRYPT, ['cost' => 10 ]);
         $cookieJar = new \GuzzleHttp\Cookie\CookieJar(false, [['Domain' => 'auth.dev', 'Name' => 'iamwebdriver', 'Value' => 1]]);
+        MemcacheService::getInstance()->fullFlush();
 
         $this->apiClient = new \GuzzleHttp\Client([
             'base_uri' => 'http://auth.dev/',

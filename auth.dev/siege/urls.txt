@@ -1,0 +1,6 @@
+http://auth.dev/users/
+http://auth.dev/users/detail/admin
+http://auth.dev/groups/
+http://auth.dev/groups/detail/Administrators
+http://auth.dev/permissions/
+http://auth.dev/permissions/detail/Administrator

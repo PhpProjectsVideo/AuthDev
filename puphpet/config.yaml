@@ -28,7 +28,7 @@ vagrantfile:
                                 vflmnfp_uvteaczyul9j:
                                     host: '6081'
                                     guest: '22'
-                        memory: '512'
+                        memory: '1024'
                         cpus: '1'
         provision:
             puppet:
@@ -228,6 +228,7 @@ php:
             - cli
             - intl
             - memcached
+            - memcache
             - mysqlnd
             - sqlite
             - curl

@@ -2,6 +2,7 @@
 
 namespace PhpProjects\AuthDev;
 
+use PhpProjects\AuthDev\Memcache\MemcacheService;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
 
 class GroupManagementTest extends DatabaseSeleniumTestCase
@@ -53,6 +54,7 @@ class GroupManagementTest extends DatabaseSeleniumTestCase
     public function setUpPage()
     {
         parent::setUpPage();
+        MemcacheService::getInstance()->fullFlush();
         $this->url('http://auth.dev/auth/login');
         $this->byName('username')->value('taken.user01');
         $this->byName('password')->value('P@ssw0rd');

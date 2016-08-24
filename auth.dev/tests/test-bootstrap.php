@@ -1,5 +1,7 @@
 <?php
 
+use PhpProjects\AuthDev\Memcache\MemcacheService;
+
 require __DIR__ . '/../vendor/autoload.php';
 
 $pdo = new PDO('mysql:host=localhost', 'auth', 'auth123');
@@ -15,3 +17,7 @@ $pdo->exec($contents);
 
 
 \PhpProjects\AuthDev\DatabaseTestCaseTrait::setPdo($pdo);
+MemcacheService::setServers([
+    ['host' => 'localhost', 'port' => '11211']
+]);
+MemcacheService::setNsPrefix('auth_test');

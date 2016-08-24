@@ -2,7 +2,9 @@
 
 namespace PhpProjects\AuthDev\Model\Group;
 
+use Phake;
 use PhpProjects\AuthDev\DatabaseTestCaseTrait;
+use PhpProjects\AuthDev\Memcache\MemcacheService;
 use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PhpProjects\AuthDev\Model\Permission\PermissionEntity;
 use PHPUnit\Framework\TestCase;
@@ -51,7 +53,10 @@ class GroupRepositoryTest extends TestCase
     {
         $this->dbSetup();
 
-        $this->groupRepository = new GroupRepository($this->getPdo());
+        $memcacheService = Phake::mock(MemcacheService::class);
+        Phake::when($memcacheService)->nsGet->thenReturn(false);
+
+        $this->groupRepository = new GroupRepository($this->getPdo(), $memcacheService);
     }
 
     public function testGetSortedGroupList()

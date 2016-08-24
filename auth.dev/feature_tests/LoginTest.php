@@ -2,6 +2,7 @@
 
 namespace PhpProjects\AuthDev;
 
+use PhpProjects\AuthDev\Memcache\MemcacheService;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
 
 class LoginTest extends DatabaseSeleniumTestCase
@@ -32,6 +33,12 @@ class LoginTest extends DatabaseSeleniumTestCase
                 [ 'groups_id' => 1, 'permissions_id' => 1 ],
             ],
         ]);
+    }
+
+    public function setUp()
+    {
+        parent::setUp();
+        MemcacheService::getInstance()->fullFlush();
     }
 
     public function testLoginFromDirect()

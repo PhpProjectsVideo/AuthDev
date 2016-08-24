@@ -2,9 +2,10 @@
 
 namespace PhpProjects\AuthDev\Model\User;
 
+use Phake;
 use PhpProjects\AuthDev\DatabaseTestCaseTrait;
+use PhpProjects\AuthDev\Memcache\MemcacheService;
 use PhpProjects\AuthDev\Model\DuplicateEntityException;
-use PhpProjects\AuthDev\Model\Group\GroupEntity;
 use PHPUnit\Framework\TestCase;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
 
@@ -57,7 +58,10 @@ class UserRepositoryTest extends TestCase
         $this->password = password_hash('P@ssw0rd', PASSWORD_BCRYPT, ['cost' => 10 ]);
         $this->dbSetup();
         
-        $this->userRepository = new UserRepository($this->getPdo());
+        $memcacheService = Phake::mock(MemcacheService::class);
+        Phake::when($memcacheService)->nsGet->thenReturn(false);
+          
+        $this->userRepository = new UserRepository($this->getPdo(), $memcacheService);
     }
 
     public function testgetSortedList()

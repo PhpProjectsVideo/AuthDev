@@ -2,7 +2,9 @@
 
 namespace PhpProjects\AuthDev\Model\Permission;
 
+use Phake;
 use PhpProjects\AuthDev\DatabaseTestCaseTrait;
+use PhpProjects\AuthDev\Memcache\MemcacheService;
 use PhpProjects\AuthDev\Model\DuplicateEntityException;
 use PHPUnit\Framework\TestCase;
 use PHPUnit_Extensions_Database_DataSet_IDataSet;
@@ -46,7 +48,10 @@ class PermissionRepositoryTest extends TestCase
     {
         $this->dbSetup();
 
-        $this->permissionRepository = new PermissionRepository($this->getPdo());
+        $memcacheService = Phake::mock(MemcacheService::class);
+        Phake::when($memcacheService)->nsGet->thenReturn(false);
+
+        $this->permissionRepository = new PermissionRepository($this->getPdo(), $memcacheService);
     }
 
     public function testGetSortedPermissionList()
